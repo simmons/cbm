@@ -1,0 +1,21 @@
+[package]
+name = "cbm"
+version = "0.1.0"
+authors = ["David Simmons <simmons@davidsimmons.com>"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/simmons/cbm"
+keywords = ["cbm", "commodore", "c64", "d64" ]
+categories = ["parser-implementations", "filesystem"]
+description = """
+Use formats found in Commodore Business Machines (CBM)
+products from the 1980's, including the legendary Commodore 64 home
+computer.
+"""
+readme = "README.md"
+
+[dependencies]
+memmap = "0.6.2"
+clap = "~2.31.2"
+
+[dev-dependencies]
+rand = "0.5.2"
