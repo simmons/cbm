@@ -1,12 +1,12 @@
 use std::fmt;
 use std::io;
 
-use disk::block::{BlockDeviceRef, Location};
-pub use disk::error::DiskError;
-use disk::format::DiskFormat;
-use disk::geos::GEOSDiskHeader;
-use disk::{self, Id, PADDING_BYTE};
-use petscii::Petscii;
+use crate::disk::block::{BlockDeviceRef, Location};
+pub use crate::disk::error::DiskError;
+use crate::disk::format::DiskFormat;
+use crate::disk::geos::GEOSDiskHeader;
+use crate::disk::{self, Id, PADDING_BYTE};
+use crate::petscii::Petscii;
 
 /// A HeaderFormat describes how header information is stored for a particular
 /// disk image format.

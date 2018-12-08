@@ -1,6 +1,3 @@
-extern crate cbm;
-extern crate clap;
-
 use clap::{App, AppSettings, Arg, SubCommand};
 use std::fs::{self, OpenOptions};
 use std::io::{self, Read, Write};

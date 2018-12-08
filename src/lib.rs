@@ -182,13 +182,11 @@
 //!
 //! See LICENSE-APACHE and LICENSE-MIT for details.
 
-extern crate memmap;
-
 pub mod disk;
 
 mod petscii;
 mod sprite;
 mod util;
 
-pub use petscii::Petscii;
-pub use sprite::Sprite;
+pub use crate::petscii::Petscii;
+pub use crate::sprite::Sprite;

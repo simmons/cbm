@@ -3,11 +3,11 @@ use std::io;
 use std::path::Path;
 use std::rc::Rc;
 
-use disk::bam::{BAMFormat, BAMSection};
-use disk::block::{BlockDevice, BlockDeviceRef, ImageBlockDevice};
-use disk::error::DiskError;
-use disk::header::{Header, HeaderFormat};
-use disk::{self, BAMRef, Disk, DiskFormat, Geometry, Id, Image, Location, Track, BAM};
+use crate::disk::bam::{BAMFormat, BAMSection};
+use crate::disk::block::{BlockDevice, BlockDeviceRef, ImageBlockDevice};
+use crate::disk::error::DiskError;
+use crate::disk::header::{Header, HeaderFormat};
+use crate::disk::{self, BAMRef, Disk, DiskFormat, Geometry, Id, Image, Location, Track, BAM};
 
 const TRACK_COUNT: usize = 80;
 
@@ -312,7 +312,7 @@ impl Disk for D81 {
 mod tests {
     #[allow(unused_imports)]
     use super::*;
-    use disk::BLOCK_SIZE;
+    use crate::disk::BLOCK_SIZE;
 
     #[test]
     fn test_track_consistency() {

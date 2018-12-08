@@ -1,16 +1,16 @@
 use std::io::{self, Read};
 
-use disk::bam::BAMRef;
-use disk::block::BlockDeviceRef;
-use disk::block::Location;
-use disk::chain::{self, ChainIterator, ChainReader};
-use disk::directory::{DirectoryEntry, FileType};
-use disk::file::FileOps;
-use disk::DiskError;
+use crate::disk::bam::BAMRef;
+use crate::disk::block::BlockDeviceRef;
+use crate::disk::block::Location;
+use crate::disk::chain::{self, ChainIterator, ChainReader};
+use crate::disk::directory::{DirectoryEntry, FileType};
+use crate::disk::file::FileOps;
+use crate::disk::DiskError;
 
-use disk::geos::reader::GEOSReader;
-use disk::geos::GEOSDirectoryEntry;
-use disk::geos::GEOSInfo;
+use crate::disk::geos::reader::GEOSReader;
+use crate::disk::geos::GEOSDirectoryEntry;
+use crate::disk::geos::GEOSInfo;
 
 /// A specialized file type for GEOS files, which include an out-of-band info
 /// block and can be structured either sequentially or as a Variable Length
@@ -215,7 +215,7 @@ impl FileOps for GEOSFile {
         if let Some(ref vlir_record_starts) = self.vlir {
             for vlir_record_start in vlir_record_starts {
                 if let Some(vlir_record_start) = vlir_record_start {
-                    let mut record_locations =
+                    let record_locations =
                         ChainIterator::new(self.blocks.clone(), *vlir_record_start)
                             .map(|r| r.map(|cs| cs.location))
                             .collect::<io::Result<Vec<_>>>()?;

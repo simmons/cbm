@@ -4,7 +4,7 @@ use std::path::Path;
 
 use memmap::{Mmap, MmapMut, MmapOptions};
 
-use disk::error::DiskError;
+use crate::disk::error::DiskError;
 
 /// Provide backing storage (file or memory) for disk images.
 pub enum Image {

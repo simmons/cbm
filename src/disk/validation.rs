@@ -6,14 +6,14 @@ use std::fmt;
 use std::io;
 use std::iter::FromIterator;
 
-use disk::chain::ChainIterator;
-use disk::error::DiskError;
-use disk::file::FileOps;
-use disk::format::DiskFormat;
-use disk::DirectoryEntry;
-use disk::Disk;
-use disk::Location;
-use petscii::Petscii;
+use crate::disk::chain::ChainIterator;
+use crate::disk::error::DiskError;
+use crate::disk::file::FileOps;
+use crate::disk::format::DiskFormat;
+use crate::disk::DirectoryEntry;
+use crate::disk::Disk;
+use crate::disk::Location;
+use crate::petscii::Petscii;
 
 /// A validation error represents an inconsistency in the disk image found by
 /// the validate() function.

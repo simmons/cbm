@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 use std::io::{self, Write};
 
-use disk::bam::BAMRef;
-use disk::block::{BlockDeviceRef, Location, BLOCK_SIZE};
-use disk::directory::DirectoryEntry;
-use disk::error::DiskError;
+use crate::disk::bam::BAMRef;
+use crate::disk::block::{BlockDeviceRef, Location, BLOCK_SIZE};
+use crate::disk::directory::DirectoryEntry;
+use crate::disk::error::DiskError;
 
 /// A "zero" chain link is a link that indicates that this is a tail block, and
 /// it has zero data bytes used.  (Which means it has a total of two bytes

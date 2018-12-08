@@ -23,14 +23,14 @@ use std::ops::{Index, IndexMut};
 use std::path::Path;
 use std::rc::Rc;
 
-use disk::bam::{BAMEntry, BAMRef, BAM};
-use disk::block::{BlockDevice, BlockDeviceRef, Location, BLOCK_SIZE};
-use disk::directory::{DirectoryEntry, DirectoryIterator, FileType};
-use disk::file::{File, LinearFile, Scheme};
-use disk::format::{DiskFormat, Track};
-use disk::header::Header;
-use disk::image::Image;
-use petscii::Petscii;
+use crate::disk::bam::{BAMEntry, BAMRef, BAM};
+use crate::disk::block::{BlockDevice, BlockDeviceRef, Location, BLOCK_SIZE};
+use crate::disk::directory::{DirectoryEntry, DirectoryIterator, FileType};
+use crate::disk::file::{File, LinearFile, Scheme};
+use crate::disk::format::{DiskFormat, Track};
+use crate::disk::header::Header;
+use crate::disk::image::Image;
+use crate::petscii::Petscii;
 
 pub use self::d64::D64;
 pub use self::d71::D71;

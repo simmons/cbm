@@ -5,12 +5,12 @@ use std::fmt::Write;
 use std::io;
 use std::iter;
 
-use disk::block::{Location, Position, PositionedData, BLOCK_SIZE};
-use disk::chain::{ChainIterator, ChainSector};
-use disk::file::Scheme;
-use disk::geos::{GEOSFileStructure, GEOSFileType};
-use disk::{Disk, DiskError, PADDING_BYTE};
-use petscii::Petscii;
+use crate::disk::block::{Location, Position, PositionedData, BLOCK_SIZE};
+use crate::disk::chain::{ChainIterator, ChainSector};
+use crate::disk::file::Scheme;
+use crate::disk::geos::{GEOSFileStructure, GEOSFileType};
+use crate::disk::{Disk, DiskError, PADDING_BYTE};
+use crate::petscii::Petscii;
 
 const FILE_TYPE_DEL: u8 = 0x00;
 const FILE_TYPE_SEQ: u8 = 0x01;
@@ -800,8 +800,8 @@ pub(super) fn check_filename_validity(filename: &Petscii) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use disk::d64::D64;
-    use disk::DiskFormat;
+    use crate::disk::d64::D64;
+    use crate::disk::DiskFormat;
 
     fn get_fresh_d64() -> (DiskFormat, D64) {
         let mut d64 = D64::open_memory(D64::geometry(false)).unwrap();

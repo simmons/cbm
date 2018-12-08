@@ -6,14 +6,14 @@ use std::fmt::Write;
 use std::fmt::{self, Display};
 use std::io;
 
-use disk::block::Location;
-use disk::directory::{DirectoryEntry, Extra, FileAttributes};
-use disk::DiskError;
-use sprite::Sprite;
-use util::{Slice, SliceMut};
+use crate::disk::block::Location;
+use crate::disk::directory::{DirectoryEntry, Extra, FileAttributes};
+use crate::disk::DiskError;
+use crate::sprite::Sprite;
+use crate::util::{Slice, SliceMut};
 
-pub use disk::geos::file::GEOSFile;
-pub use disk::geos::reader::GEOSReader;
+pub use crate::disk::geos::file::GEOSFile;
+pub use crate::disk::geos::reader::GEOSReader;
 
 /// GEOS itself looks for "GEOS format" to determine if a disk is
 /// GEOS-formatted, although the full GEOS id string will be something like

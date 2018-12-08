@@ -12,10 +12,10 @@ pub fn hexdump(
     if buffer.len() == 0 {
         // For a zero-length buffer, at least print an offset instead of
         // nothing.
-        try!(write!(f, "{}{:04x}: ", prefix, 0));
+        r#try!(write!(f, "{}{:04x}: ", prefix, 0));
     }
     while offset < buffer.len() {
-        try!(write!(f, "{}{:04x}: ", prefix, offset));
+        r#try!(write!(f, "{}{:04x}: ", prefix, offset));
 
         // Determine row byte range
         let next_offset = offset + COLUMNS;
@@ -28,15 +28,15 @@ pub fn hexdump(
 
         // Print hex representation
         for b in row {
-            try!(write!(f, "{:02x} ", b));
+            r#try!(write!(f, "{:02x} ", b));
         }
         for _ in 0..padding {
-            try!(write!(f, "   "));
+            r#try!(write!(f, "   "));
         }
 
         // Print ASCII representation
         for b in row {
-            try!(write!(
+            r#try!(write!(
                 f,
                 "{}",
                 match *b {
@@ -48,7 +48,7 @@ pub fn hexdump(
 
         offset += COLUMNS;
         if offset < buffer.len() {
-            try!(writeln!(f, ""));
+            r#try!(writeln!(f, ""));
         }
     }
     Ok(())

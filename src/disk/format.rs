@@ -1,11 +1,11 @@
 use std::io;
 
-use disk::bam::BAMFormat;
-use disk::block::BLOCK_SIZE;
-use disk::directory::ENTRY_SIZE;
-use disk::error::DiskError;
-use disk::header::HeaderFormat;
-use disk::{BAMEntry, Location, BAM};
+use crate::disk::bam::BAMFormat;
+use crate::disk::block::BLOCK_SIZE;
+use crate::disk::directory::ENTRY_SIZE;
+use crate::disk::error::DiskError;
+use crate::disk::header::HeaderFormat;
+use crate::disk::{BAMEntry, Location, BAM};
 
 // The "next track" routines reflect the information in Peter Schepers'
 // DISK.TXT document found at:
@@ -471,7 +471,7 @@ impl<'a> Iterator for LocationIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use disk::{D64, D71, D81, Disk};
+    use crate::disk::{D64, D71, D81, Disk};
 
     const TOTAL_ALLOCABLE_BLOCKS: usize = 664;
     const REMAINING_DIRECTORY_BLOCKS: usize = 17;

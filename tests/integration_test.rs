@@ -1,6 +1,3 @@
-extern crate cbm;
-extern crate rand;
-
 use std::fmt;
 use std::io;
 

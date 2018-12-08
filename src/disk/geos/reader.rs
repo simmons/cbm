@@ -1,14 +1,14 @@
 use std::collections::VecDeque;
 use std::io::{self, Read};
 
-use disk::block::BlockDeviceRef;
-use disk::block::Location;
-use disk::block::BLOCK_SIZE;
-use disk::chain::{ChainIterator, ChainReader};
-use disk::directory::{self, DirectoryEntry};
-use disk::DiskError;
+use crate::disk::block::BlockDeviceRef;
+use crate::disk::block::Location;
+use crate::disk::block::BLOCK_SIZE;
+use crate::disk::chain::{ChainIterator, ChainReader};
+use crate::disk::directory::{self, DirectoryEntry};
+use crate::disk::DiskError;
 
-use disk::geos::GEOSDirectoryEntry;
+use crate::disk::geos::GEOSDirectoryEntry;
 
 /// A block can store 254 bytes of data -- the 256 full block size, minus 2
 /// bytes for the next track and sector pointer.

@@ -2,17 +2,17 @@
 
 use std::io::{self, Read, Write};
 
-use disk::bam::BAMRef;
-use disk::block::BlockDeviceRef;
-use disk::block::Location;
-use disk::block::Position;
-use disk::block::BLOCK_SIZE;
-use disk::chain::{self, ChainIterator, ChainLink, ChainReader, ChainWriter};
-use disk::directory::{DirectoryEntry, Extra, FileType};
-use disk::geos::{GEOSFile, GEOSInfo};
-use disk::{Disk, DiskError};
-use petscii::Petscii;
-use util;
+use crate::disk::bam::BAMRef;
+use crate::disk::block::BlockDeviceRef;
+use crate::disk::block::Location;
+use crate::disk::block::Position;
+use crate::disk::block::BLOCK_SIZE;
+use crate::disk::chain::{self, ChainIterator, ChainLink, ChainReader, ChainWriter};
+use crate::disk::directory::{DirectoryEntry, Extra, FileType};
+use crate::disk::geos::{GEOSFile, GEOSInfo};
+use crate::disk::{Disk, DiskError};
+use crate::petscii::Petscii;
+use crate::util;
 
 /// A scheme represents a particular file layout scheme.  This is different
 /// from `FileType` which represents the CBM file type (PRG, SEQ, REL, or USR).

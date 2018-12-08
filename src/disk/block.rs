@@ -3,11 +3,11 @@ use std::fmt;
 use std::io::{self, Write};
 use std::rc::Rc;
 
-use disk::error::DiskError;
-use disk::format::DiskFormat;
-use disk::image::Image;
-use disk::{Geometry, Track};
-use util;
+use crate::disk::error::DiskError;
+use crate::disk::format::DiskFormat;
+use crate::disk::image::Image;
+use crate::disk::{Geometry, Track};
+use crate::util;
 
 pub const BLOCK_SIZE: usize = 256;
 

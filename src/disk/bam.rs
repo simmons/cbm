@@ -4,9 +4,9 @@ use std::fmt::Write;
 use std::io;
 use std::rc::Rc;
 
-use disk::block::{BlockDeviceRef, Location};
-use disk::error::DiskError;
-use disk::DiskFormat;
+use crate::disk::block::{BlockDeviceRef, Location};
+use crate::disk::error::DiskError;
+use crate::disk::DiskFormat;
 
 /// A BAMFormat describes how BAM information is stored for a particular disk
 /// image format.
