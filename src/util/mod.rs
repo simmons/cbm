@@ -40,7 +40,7 @@ pub fn hexdump(
                 f,
                 "{}",
                 match *b {
-                    c @ 0x20...0x7E => c as char,
+                    c @ 0x20..=0x7E => c as char,
                     _ => '.',
                 }
             )?;
