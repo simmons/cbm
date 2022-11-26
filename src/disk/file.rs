@@ -93,15 +93,15 @@ pub trait FileOps {
     /// Read an entire record into memory and return it.
     fn record(&self, index: usize) -> io::Result<Vec<u8>>;
     /// Write debug-level information about the file to the provided writer.
-    fn details(&self, writer: &mut Write, verbosity: usize) -> io::Result<()>;
+    fn details(&self, writer: &mut dyn Write, verbosity: usize) -> io::Result<()>;
     /// Return a list of sectors occupied by this file.
     fn occupied_sectors(&self) -> io::Result<Vec<Location>>;
     /// Return a reader for the contents of this file.  If this file is
     /// non-linear, return a NonLinearFile error.
-    fn reader(&self) -> io::Result<Box<Read>>;
+    fn reader(&self) -> io::Result<Box<dyn Read>>;
     /// Return a writer for this file.  If this file is non-linear, return a
     /// NonLinearFile error.
-    fn writer(&self) -> io::Result<Box<Write>>;
+    fn writer(&self) -> io::Result<Box<dyn Write>>;
 
     /// Return the filename.
     fn name(&self) -> Petscii {
@@ -109,7 +109,7 @@ pub trait FileOps {
     }
 
     /// Hex-dump the file contents to the provided writer.
-    fn dump(&self, writer: &mut Write) -> io::Result<()> {
+    fn dump(&self, writer: &mut dyn Write) -> io::Result<()> {
         writeln!(writer, "Filename: \"{}\"", self.name())?;
         for i in 0..self.record_count()? {
             writeln!(writer, "Record: {}", i)?;
@@ -160,7 +160,7 @@ impl File {
     }
 
     /// Return a reference to the underlying specialized file.
-    fn get_specialized_file(&self) -> &FileOps {
+    fn get_specialized_file(&self) -> &dyn FileOps {
         match self {
             File::Linear(ref f) => f,
             File::Relative(ref f) => f,
@@ -171,7 +171,7 @@ impl File {
     }
 
     /// Return a mutable reference to the underlying specialized file.
-    fn get_specialized_file_mut(&mut self) -> &mut FileOps {
+    fn get_specialized_file_mut(&mut self) -> &mut dyn FileOps {
         match self {
             File::Linear(ref mut f) => f,
             File::Relative(ref mut f) => f,
@@ -199,7 +199,7 @@ impl FileOps for File {
         self.get_specialized_file().record(index)
     }
 
-    fn details(&self, writer: &mut Write, verbosity: usize) -> io::Result<()> {
+    fn details(&self, writer: &mut dyn Write, verbosity: usize) -> io::Result<()> {
         self.get_specialized_file().details(writer, verbosity)
     }
 
@@ -207,11 +207,11 @@ impl FileOps for File {
         self.get_specialized_file().occupied_sectors()
     }
 
-    fn reader(&self) -> io::Result<Box<Read>> {
+    fn reader(&self) -> io::Result<Box<dyn Read>> {
         self.get_specialized_file().reader()
     }
 
-    fn writer(&self) -> io::Result<Box<Write>> {
+    fn writer(&self) -> io::Result<Box<dyn Write>> {
         self.get_specialized_file().writer()
     }
 }
@@ -267,7 +267,7 @@ impl FileOps for LinearFile {
         }
     }
 
-    fn details(&self, writer: &mut Write, verbosity: usize) -> io::Result<()> {
+    fn details(&self, writer: &mut dyn Write, verbosity: usize) -> io::Result<()> {
         if verbosity > 0 {
             if let Some(position) = self.entry().position {
                 writeln!(writer, "Directory position: {}", position)?;
@@ -292,14 +292,14 @@ impl FileOps for LinearFile {
         Ok(locations)
     }
 
-    fn reader(&self) -> io::Result<Box<Read>> {
+    fn reader(&self) -> io::Result<Box<dyn Read>> {
         Ok(Box::new(ChainReader::new(
             self.blocks.clone(),
             self.entry.first_sector,
         )))
     }
 
-    fn writer(&self) -> io::Result<Box<Write>> {
+    fn writer(&self) -> io::Result<Box<dyn Write>> {
         match ChainWriter::new(
             self.blocks.clone(),
             self.bam.clone(),
@@ -509,7 +509,7 @@ impl FileOps for RelativeFile {
         Ok(record)
     }
 
-    fn details(&self, writer: &mut Write, verbosity: usize) -> io::Result<()> {
+    fn details(&self, writer: &mut dyn Write, verbosity: usize) -> io::Result<()> {
         if verbosity > 0 {
             if let Some(position) = self.entry().position {
                 writeln!(writer, "Directory position: {}", position)?;
@@ -537,11 +537,11 @@ impl FileOps for RelativeFile {
         Ok(locations)
     }
 
-    fn reader(&self) -> io::Result<Box<Read>> {
+    fn reader(&self) -> io::Result<Box<dyn Read>> {
         Err(DiskError::NonLinearFile.into())
     }
 
-    fn writer(&self) -> io::Result<Box<Write>> {
+    fn writer(&self) -> io::Result<Box<dyn Write>> {
         Err(DiskError::NonLinearFile.into())
     }
 }

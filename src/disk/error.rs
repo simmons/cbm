@@ -1,11 +1,10 @@
 use std::error;
-use std::error::Error;
 use std::fmt;
 use std::io;
 
 /// Errors that can be returned from disk image operations.  These are
 /// generally converted into `io::Error`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DiskError {
     /// Unknown error
     Unknown,
@@ -94,7 +93,7 @@ impl error::Error for DiskError {
 
     /// For errors which encapsulate another error, allow the caller to fetch
     /// the contained error.
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             _ => None,
         }
@@ -104,7 +103,7 @@ impl error::Error for DiskError {
 impl fmt::Display for DiskError {
     /// Provide human-readable descriptions of the errors
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.description())
+        write!(f, "{}", &self.to_string())
     }
 }
 

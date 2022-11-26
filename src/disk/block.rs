@@ -11,7 +11,7 @@ use crate::util;
 
 pub const BLOCK_SIZE: usize = 256;
 
-pub type BlockDeviceRef = Rc<RefCell<BlockDevice>>;
+pub type BlockDeviceRef = Rc<RefCell<dyn BlockDevice>>;
 
 pub trait BlockDevice {
     fn check_writability(&self) -> io::Result<()>;
@@ -31,7 +31,7 @@ pub trait BlockDevice {
         Ok(&block[position.offset as usize..position.offset as usize + position.size as usize])
     }
 
-    fn positioned_read(&self, positioned_data: &mut PositionedData) -> io::Result<()> {
+    fn positioned_read(&self, positioned_data: &mut dyn PositionedData) -> io::Result<()> {
         let position = positioned_data.position()?;
         let block = self.sector(position.location)?;
         positioned_data.positioned_read(
@@ -40,7 +40,7 @@ pub trait BlockDevice {
         Ok(())
     }
 
-    fn positioned_write(&mut self, positioned_data: &PositionedData) -> io::Result<()> {
+    fn positioned_write(&mut self, positioned_data: &dyn PositionedData) -> io::Result<()> {
         let position = positioned_data.position()?;
         let block = self.sector_mut(position.location)?;
         positioned_data.positioned_write(
@@ -49,7 +49,7 @@ pub trait BlockDevice {
         Ok(())
     }
 
-    fn dump(&self, writer: &mut Write) -> io::Result<()> {
+    fn dump(&self, writer: &mut dyn Write) -> io::Result<()> {
         let locations = LocationIterator::from_geometry(self.geometry());
         for location in locations {
             writeln!(writer, "")?;

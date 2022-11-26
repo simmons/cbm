@@ -235,11 +235,11 @@ impl Disk for D64 {
         self.blocks.clone()
     }
 
-    fn blocks_ref(&self) -> ::std::cell::Ref<'_, BlockDevice> {
+    fn blocks_ref(&self) -> ::std::cell::Ref<'_, dyn BlockDevice> {
         self.blocks.borrow()
     }
 
-    fn blocks_ref_mut(&self) -> ::std::cell::RefMut<'_, BlockDevice> {
+    fn blocks_ref_mut(&self) -> ::std::cell::RefMut<'_, dyn BlockDevice> {
         self.blocks.borrow_mut()
     }
 

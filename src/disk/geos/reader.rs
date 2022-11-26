@@ -212,7 +212,7 @@ impl Read for GEOSReader {
             let bytes = buf.len().min(self.buffer.len());
 
             // Write bytes
-            &mut buf[..bytes].copy_from_slice(&self.buffer[..bytes]);
+            let _ = &mut buf[..bytes].copy_from_slice(&self.buffer[..bytes]);
             bytes_written += bytes;
 
             if bytes == buf.len() {

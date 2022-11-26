@@ -112,16 +112,16 @@ impl FileAttributes {
             &FileType::Unknown(b) => b,
         };
         if self.unused_bit {
-            byte = byte | FILE_ATTRIB_UNUSED_MASK
+            byte |= FILE_ATTRIB_UNUSED_MASK
         };
         if self.save_with_replace_flag {
-            byte = byte | FILE_ATTRIB_SAVE_WITH_REPLACE_MASK
+            byte |= FILE_ATTRIB_SAVE_WITH_REPLACE_MASK
         };
         if self.locked_flag {
-            byte = byte | FILE_ATTRIB_LOCKED_MASK
+            byte |= FILE_ATTRIB_LOCKED_MASK
         };
         if self.closed_flag {
-            byte = byte | FILE_ATTRIB_CLOSED_MASK
+            byte |= FILE_ATTRIB_CLOSED_MASK
         };
         byte
     }
@@ -228,7 +228,7 @@ impl fmt::Debug for Extra {
 
 /// The extra directory entry bytes used in regular files.  These should all be
 /// unused, so we simply preserve whatever bytes are present.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct LinearExtra {
     pub unused: Vec<u8>, // 9 bytes
 }
@@ -556,7 +556,7 @@ impl fmt::Debug for DirectoryEntry {
 
 /// We use a boxed type for this instead of just a ChainIterator, so we can add
 /// the GEOS border block to the iteration if needed.
-type DirectoryBlockIterator = Box<Iterator<Item = io::Result<ChainSector>>>;
+type DirectoryBlockIterator = Box<dyn Iterator<Item = io::Result<ChainSector>>>;
 
 /// This iterator will process the entire directory of a disk image and return
 /// a sequence of entries.

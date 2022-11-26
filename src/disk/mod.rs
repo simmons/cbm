@@ -79,7 +79,7 @@ impl DiskType {
 
 /// Open a disk image, regardless of whether it is a D64 (1541), D71 (1571), or
 /// D81 (1581) image.
-pub fn open<P: AsRef<Path>>(path: P, writable: bool) -> io::Result<Box<Disk>> {
+pub fn open<P: AsRef<Path>>(path: P, writable: bool) -> io::Result<Box<dyn Disk>> {
     // Try to determine the disk type based on its filename extension.
     match DiskType::from_extension(&path) {
         Some(DiskType::D64) => return Ok(Box::new(d64::D64::open(path, writable)?)),
@@ -139,8 +139,8 @@ pub trait Disk {
     fn disk_format_mut(&mut self) -> io::Result<&mut DiskFormat>;
     fn set_disk_format(&mut self, disk_format: Option<DiskFormat>);
     fn blocks(&self) -> BlockDeviceRef;
-    fn blocks_ref(&self) -> ::std::cell::Ref<BlockDevice>;
-    fn blocks_ref_mut(&self) -> ::std::cell::RefMut<'_, BlockDevice>;
+    fn blocks_ref(&self) -> ::std::cell::Ref<dyn BlockDevice>;
+    fn blocks_ref_mut(&self) -> ::std::cell::RefMut<'_, dyn BlockDevice>;
     fn header(&self) -> io::Result<&Header>;
     fn header_mut(&mut self) -> io::Result<&mut Header>;
     fn set_header(&mut self, header: Option<Header>);
@@ -222,7 +222,7 @@ pub trait Disk {
 
         // Write a fresh header
         {
-            let mut header = Header::new(disk_format.header, disk_format, &name, &id);
+            let mut header = Header::new(disk_format.header, disk_format, name, id);
             header.write(self.blocks(), disk_format.header)?;
             self.set_header(Some(header));
         }
@@ -404,7 +404,7 @@ pub trait Disk {
     }
 
     /// Write a hex dump of the disk image to the provided writer.
-    fn dump(&mut self, writer: &mut Write) -> io::Result<()> {
+    fn dump(&mut self, writer: &mut dyn Write) -> io::Result<()> {
         self.blocks_ref().dump(writer)
     }
 
@@ -434,10 +434,10 @@ pub trait Disk {
     }
 }
 
-impl fmt::Display for Disk {
+impl fmt::Display for dyn Disk {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.header() {
-            &Ok(ref header) => {
+            &Ok(header) => {
                 write!(
                     f,
                     "{} \"{:16}\" {} {}",
@@ -453,7 +453,7 @@ impl fmt::Display for Disk {
     }
 }
 
-impl fmt::Debug for Disk {
+impl fmt::Debug for dyn Disk {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // Read a fresh header so we can return a useful error condition should
         // it not be readable.
@@ -465,7 +465,7 @@ impl fmt::Debug for Disk {
     }
 }
 
-impl<'a> IntoIterator for &'a Disk {
+impl<'a> IntoIterator for &'a dyn Disk {
     type Item = io::Result<DirectoryEntry>;
     type IntoIter = DirectoryIterator;
 
@@ -540,7 +540,7 @@ impl Geometry {
 
 /// Various fields in CBM DOS are two-byte identifiers which are frequently
 /// shown as Petscii strings.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Id([u8; 2]);
 
 impl Id {

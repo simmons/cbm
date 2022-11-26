@@ -315,12 +315,12 @@ fn open_cbm_file(diskimage: &str, filename: &str) -> io::Result<File> {
 }
 
 /// Open a file on a CBM disk image for reading.
-fn open_cbm_reader(diskimage: &str, filename: &str) -> io::Result<Box<Read>> {
+fn open_cbm_reader(diskimage: &str, filename: &str) -> io::Result<Box<dyn Read>> {
     Ok(Box::new(open_cbm_file(diskimage, filename)?.reader()?))
 }
 
 /// Open a file on a CBM disk image for appending.
-fn open_cbm_appender(diskimage: &str, filename: &str) -> io::Result<Box<Write>> {
+fn open_cbm_appender(diskimage: &str, filename: &str) -> io::Result<Box<dyn Write>> {
     Ok(Box::new(open_cbm_file(diskimage, filename)?.writer()?))
 }
 
@@ -338,12 +338,12 @@ fn open_geos_file(diskimage: &str, filename: &str) -> io::Result<GEOSFile> {
 }
 
 /// Open a GEOS file for reading.
-fn open_geos_reader(diskimage: &str, filename: &str) -> io::Result<Box<Read>> {
+fn open_geos_reader(diskimage: &str, filename: &str) -> io::Result<Box<dyn Read>> {
     Ok(Box::new(open_geos_file(diskimage, filename)?.reader()?))
 }
 
 /// Open a file on a CBM disk image for writing.
-fn open_cbm_writer(diskimage: &str, filename: &str, file_type: FileType) -> io::Result<Box<Write>> {
+fn open_cbm_writer(diskimage: &str, filename: &str, file_type: FileType) -> io::Result<Box<dyn Write>> {
     let mut disk = disk::open(diskimage, true)?;
     let file = disk.create_file(&filename.into(), file_type, Scheme::Linear)?;
     let file = match file {
@@ -355,7 +355,7 @@ fn open_cbm_writer(diskimage: &str, filename: &str, file_type: FileType) -> io::
 }
 
 /// Open a file for reading
-fn open_fs_reader(filename: &str) -> io::Result<Box<Read>> {
+fn open_fs_reader(filename: &str) -> io::Result<Box<dyn Read>> {
     if filename == STDINOUT_PSEUDOFILENAME {
         Ok(Box::new(io::stdin()))
     } else {
@@ -364,7 +364,7 @@ fn open_fs_reader(filename: &str) -> io::Result<Box<Read>> {
 }
 
 /// Open a file for writing
-fn open_fs_writer(filename: &str) -> io::Result<Box<Write>> {
+fn open_fs_writer(filename: &str) -> io::Result<Box<dyn Write>> {
     if filename == STDINOUT_PSEUDOFILENAME {
         Ok(Box::new(io::stdout()))
     } else {
