@@ -89,7 +89,7 @@ fn petscii_to_unicode_string(petscii: &[u8]) -> String {
 /// Commodore's 8-bit computers used an unusual variant of ASCII commonly known as "PETSCII".
 /// A PETSCII string can be represented by this `Petscii` struct, and its functions help handle
 /// PETSCII strings and perform lossy conversions between PETSCII and Unicode.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Petscii(Vec<u8>);
 
 impl Petscii {
@@ -106,7 +106,7 @@ impl Petscii {
                 break;
             }
         }
-        Petscii((&bytes[..end]).to_owned())
+        Petscii((bytes[..end]).to_owned())
     }
 
     /// We only translate Unicode code points that happen to be present in our
@@ -180,7 +180,7 @@ impl<'a> From<&'a str> for Petscii {
 
 impl AsRef<Petscii> for Petscii {
     fn as_ref(&self) -> &Petscii {
-        &self
+        self
     }
 }
 
@@ -234,7 +234,7 @@ impl<'a> IntoIterator for &'a Petscii {
     type Item = &'a u8;
     type IntoIter = ::std::slice::Iter<'a, u8>;
     fn into_iter(self) -> Self::IntoIter {
-        (&self.0).into_iter()
+        (self.0).iter()
     }
 }
 

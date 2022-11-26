@@ -4,7 +4,7 @@ use std::io;
 
 /// Errors that can be returned from disk image operations.  These are
 /// generally converted into `io::Error`.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DiskError {
     /// Unknown error
     Unknown,

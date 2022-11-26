@@ -270,9 +270,9 @@ impl Disk for D81 {
     }
 
     fn header<'a>(&'a self) -> io::Result<&'a Header> {
-        match &self.header {
-            &Some(ref header) => Ok(&header),
-            &None => Err(DiskError::Unformatted.into()),
+        match self.header {
+            Some(ref header) => Ok(header),
+            None => Err(DiskError::Unformatted.into()),
         }
     }
 

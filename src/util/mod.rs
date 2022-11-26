@@ -9,7 +9,7 @@ pub fn hexdump(
 ) -> std::result::Result<(), std::fmt::Error> {
     const COLUMNS: usize = 16;
     let mut offset: usize = 0;
-    if buffer.len() == 0 {
+    if buffer.is_empty() {
         // For a zero-length buffer, at least print an offset instead of
         // nothing.
         write!(f, "{}{:04x}: ", prefix, 0)?;

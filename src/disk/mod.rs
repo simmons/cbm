@@ -222,7 +222,7 @@ pub trait Disk {
 
         // Write a fresh header
         {
-            let mut header = Header::new(disk_format.header, disk_format, &name, &id);
+            let mut header = Header::new(disk_format.header, disk_format, name, id);
             header.write(self.blocks(), disk_format.header)?;
             self.set_header(Some(header));
         }
@@ -437,7 +437,7 @@ pub trait Disk {
 impl fmt::Display for dyn Disk {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self.header() {
-            &Ok(ref header) => {
+            &Ok(header) => {
                 write!(
                     f,
                     "{} \"{:16}\" {} {}",
@@ -540,7 +540,7 @@ impl Geometry {
 
 /// Various fields in CBM DOS are two-byte identifiers which are frequently
 /// shown as Petscii strings.
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Id([u8; 2]);
 
 impl Id {
