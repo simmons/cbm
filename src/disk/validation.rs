@@ -1,7 +1,6 @@
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use std::error;
-use std::error::Error;
 use std::fmt;
 use std::io;
 use std::iter::FromIterator;
