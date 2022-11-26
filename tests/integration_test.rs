@@ -34,7 +34,7 @@ fn random_name(rng: &mut impl Rng) -> Petscii {
     Petscii::from_bytes(&bytes)
 }
 
-fn random_available_name(rng: &mut impl Rng, disk: &Box<Disk>) -> Petscii {
+fn random_available_name(rng: &mut impl Rng, disk: &Box<dyn Disk>) -> Petscii {
     loop {
         let name = random_name(rng);
 
@@ -65,7 +65,7 @@ fn random_file_type(rng: &mut impl Rng) -> FileType {
     LINEAR_FILE_TYPES[rng.gen_range(0, LINEAR_FILE_TYPES.len())]
 }
 
-fn new_disk(mut rng: &mut impl Rng, disk_type: &DiskType) -> Box<Disk> {
+fn new_disk(mut rng: &mut impl Rng, disk_type: &DiskType) -> Box<dyn Disk> {
     let name = random_name(&mut rng);
     let id = random_id(&mut rng);
     match disk_type {
@@ -95,7 +95,7 @@ struct RandomFile {
 }
 
 impl RandomFile {
-    fn new(mut rng: &mut XorShiftRng, disk: &Box<Disk>) -> RandomFile {
+    fn new(mut rng: &mut XorShiftRng, disk: &Box<dyn Disk>) -> RandomFile {
         let name = random_available_name(&mut rng, &disk);
         let size: usize = rng.gen_range(MIN_FILE_SIZE, MAX_FILE_SIZE);
         let file_type = random_file_type(&mut rng);
@@ -113,7 +113,7 @@ impl RandomFile {
         (self.size + CONTENT_BYTES_PER_BLOCK - 1) / CONTENT_BYTES_PER_BLOCK
     }
 
-    fn write(&self, disk: &mut Box<Disk>) -> io::Result<()> {
+    fn write(&self, disk: &mut Box<dyn Disk>) -> io::Result<()> {
         let file = disk.create_file(&self.name, self.file_type, Scheme::Linear)?;
         let mut writer = file.writer()?;
         writer.write_all(&self.contents)?;
@@ -121,7 +121,7 @@ impl RandomFile {
         Ok(())
     }
 
-    fn verify(&self, disk: &Box<Disk>) -> io::Result<()> {
+    fn verify(&self, disk: &Box<dyn Disk>) -> io::Result<()> {
         // Read file.
         let file = disk.open_file(&self.name)?;
         let mut reader = file.reader()?;
@@ -151,7 +151,7 @@ impl fmt::Debug for RandomFile {
     }
 }
 
-fn verify_disk_state(disk: &Box<Disk>, files: &Vec<RandomFile>) -> io::Result<()> {
+fn verify_disk_state(disk: &Box<dyn Disk>, files: &Vec<RandomFile>) -> io::Result<()> {
     // Validate disk image
     disk.validate().unwrap();
     // Confirm blocks free
