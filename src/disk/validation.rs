@@ -58,7 +58,7 @@ impl fmt::Display for ValidationError {
                 location, filename1, filename2
             ),
             FileScanError(ref e, ref filename) => write!(f, "Error scanning {:?}: {}", filename, e),
-            _ => f.write_str(self.description()),
+            _ => f.write_str(&self.to_string()),
         }
     }
 }
