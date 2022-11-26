@@ -556,7 +556,7 @@ impl fmt::Debug for DirectoryEntry {
 
 /// We use a boxed type for this instead of just a ChainIterator, so we can add
 /// the GEOS border block to the iteration if needed.
-type DirectoryBlockIterator = Box<Iterator<Item = io::Result<ChainSector>>>;
+type DirectoryBlockIterator = Box<dyn Iterator<Item = io::Result<ChainSector>>>;
 
 /// This iterator will process the entire directory of a disk image and return
 /// a sequence of entries.

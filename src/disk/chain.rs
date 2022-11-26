@@ -155,7 +155,7 @@ impl io::Read for ChainReader {
                 Some(mut block) => {
                     // Copy as much of this block as possible into the caller-provided buffer.
                     let nbytes = block.len().min(buf.len());
-                    &buf[0..nbytes].copy_from_slice(&block[0..nbytes]);
+                    let _ = &buf[0..nbytes].copy_from_slice(&block[0..nbytes]);
                     total_nbytes += nbytes;
 
                     // Reduce the block slice to the unread portion (which may be zero bytes).
@@ -332,7 +332,7 @@ impl io::Write for ChainWriter {
 
             // Copy as much of the caller-provided buffer as possible into the block.
             let nbytes = remaining.min(buf.len());
-            &self.block[offset..offset + nbytes].copy_from_slice(&buf[0..nbytes]);
+            let _ = &self.block[offset..offset + nbytes].copy_from_slice(&buf[0..nbytes]);
             total_nbytes += nbytes;
 
             // Update the block link's indication of used bytes.

@@ -137,7 +137,7 @@ impl FileOps for GEOSFile {
         }
     }
 
-    fn details(&self, writer: &mut io::Write, verbosity: usize) -> io::Result<()> {
+    fn details(&self, writer: &mut dyn io::Write, verbosity: usize) -> io::Result<()> {
         if verbosity > 0 {
             if let Some(position) = self.entry().position {
                 writeln!(writer, "Directory position: {}", position)?;
@@ -228,7 +228,7 @@ impl FileOps for GEOSFile {
         Ok(locations)
     }
 
-    fn reader(&self) -> io::Result<Box<Read>> {
+    fn reader(&self) -> io::Result<Box<dyn Read>> {
         match self.vlir {
             Some(_) => Err(DiskError::NonLinearFile.into()),
             None => {
@@ -242,7 +242,7 @@ impl FileOps for GEOSFile {
         }
     }
 
-    fn writer(&self) -> io::Result<Box<io::Write>> {
+    fn writer(&self) -> io::Result<Box<dyn io::Write>> {
         match self.vlir {
             Some(_) => Err(DiskError::NonLinearFile.into()),
             None => Err(DiskError::ReadOnly.into()),

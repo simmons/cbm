@@ -94,7 +94,7 @@ impl error::Error for DiskError {
 
     /// For errors which encapsulate another error, allow the caller to fetch
     /// the contained error.
-    fn cause(&self) -> Option<&error::Error> {
+    fn cause(&self) -> Option<&dyn error::Error> {
         match *self {
             _ => None,
         }
