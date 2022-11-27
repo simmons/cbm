@@ -61,34 +61,7 @@ pub enum DiskError {
 impl error::Error for DiskError {
     /// Provide terse descriptions of the errors.
     fn description(&self) -> &str {
-        use self::DiskError::*;
-        match *self {
-            Unknown => "Unknown error",
-            ReadOnly => "Write access attempted to read-only media",
-            InvalidLocation => "Bad track or sector",
-            InvalidOffset => "Offset out of bounds",
-            InvalidHeader => "Invalid header",
-            InvalidBAM => "Invalid BAM",
-            InvalidLayout => "Invalid layout",
-            InvalidRecord => "Record out of bounds",
-            ReadOverflow => "Read overflow",
-            ReadUnderrun => "Read underrun",
-            WriteUnderrun => "Write underrun",
-            Unformatted => "Attempt to use unformatted media",
-            NotFound => "File not found",
-            ChainLoop => "Chain loop detected",
-            InvalidChainLink => "Invalid chain link",
-            InvalidRelativeFile => "Invalid relative file layout",
-            Unpositioned => "Attempt to write a resource with no embedded position",
-            FilenameTooLong => "Filename exceeds maximum length",
-            FileExists => "A file with the specified filename already exists",
-            DiskFull => "Disk is full",
-            InvalidRecordIndex => "Invalid record index",
-            UnknownFormat => "Unknown format",
-            GEOSInfoNotFound => "A required GEOS info block was not found.",
-            RecordTooLarge => "A record exceeded the maximum size.",
-            NonLinearFile => "Attempt to linearly access non-linear file.",
-        }
+        self.message()
     }
 
     /// For errors which encapsulate another error, allow the caller to fetch
@@ -103,7 +76,7 @@ impl error::Error for DiskError {
 impl fmt::Display for DiskError {
     /// Provide human-readable descriptions of the errors
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", &self.to_string())
+        write!(f, "{}", &self.message())
     }
 }
 
@@ -172,6 +145,38 @@ impl DiskError {
     pub fn to_io_error(&self) -> io::Error {
         let io_error: io::Error = self.clone().into();
         io_error
+    }
+
+    /// Provide terse descriptions of the errors.
+    fn message(&self) -> &str {
+        use self::DiskError::*;
+        match *self {
+            Unknown => "Unknown error",
+            ReadOnly => "Write access attempted to read-only media",
+            InvalidLocation => "Bad track or sector",
+            InvalidOffset => "Offset out of bounds",
+            InvalidHeader => "Invalid header",
+            InvalidBAM => "Invalid BAM",
+            InvalidLayout => "Invalid layout",
+            InvalidRecord => "Record out of bounds",
+            ReadOverflow => "Read overflow",
+            ReadUnderrun => "Read underrun",
+            WriteUnderrun => "Write underrun",
+            Unformatted => "Attempt to use unformatted media",
+            NotFound => "File not found",
+            ChainLoop => "Chain loop detected",
+            InvalidChainLink => "Invalid chain link",
+            InvalidRelativeFile => "Invalid relative file layout",
+            Unpositioned => "Attempt to write a resource with no embedded position",
+            FilenameTooLong => "Filename exceeds maximum length",
+            FileExists => "A file with the specified filename already exists",
+            DiskFull => "Disk is full",
+            InvalidRecordIndex => "Invalid record index",
+            UnknownFormat => "Unknown format",
+            GEOSInfoNotFound => "A required GEOS info block was not found.",
+            RecordTooLarge => "A record exceeded the maximum size.",
+            NonLinearFile => "Attempt to linearly access non-linear file.",
+        }
     }
 }
 
