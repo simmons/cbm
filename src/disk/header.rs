@@ -65,14 +65,13 @@ impl Header {
         // disks. See the notes in the cbm::disk module documentation for full details.
         let dos_type = Id::from_bytes(&block[format.dos_type_offset..format.dos_type_offset + 2]);
 
-        // We only handle disks with the standard CBM DOS version for its
-        // particular format (e.g. 0x41 "A" for 1541, 0x44 "D" for 1581, etc.).
-        // (For whatever it's worth, the sample "edit disk name" program on page 78
-        // of "Inside Commodore DOS" also performs this check.)
+        // This field is the diskette DOS version. We don't enforce any particular value
+        // for this field. A real CBM DOS would allow the disk to be read normally
+        // regardless of the value of this field, but would error if write attempts are
+        // made to a disk with a DOS version other than 0x00 or the expected DOS
+        // version. See the notes in the cbm::disk module documentation for full
+        // details.
         let disk_dos_version_type = block[format.disk_dos_version_offset];
-        if disk_dos_version_type != format.expected_dos_version {
-            return Err(DiskError::InvalidHeader.into());
-        }
 
         // All 1571 disk images should have the double-side flag set.
         if let Some((offset, value)) = format.double_sided_flag_expectation {
