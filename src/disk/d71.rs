@@ -23,7 +23,7 @@ static HEADER_FORMAT: HeaderFormat = HeaderFormat {
     dos_type_offset: 0xA5,
     padding_offsets: &[0xA0, 0xA1, 0xA4, 0xA7, 0xA8, 0xA9, 0xAA],
     default_dos_type: Id([b'2', b'A']),
-    expected_dos_version: 0x41,
+    default_dos_version: 0x41,
     double_sided_flag_expectation: Some((
         HEADER_DOUBLE_SIDED_FLAG_OFFSET,
         HEADER_DOUBLE_SIDED_VALUE,

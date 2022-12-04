@@ -20,9 +20,9 @@ pub struct HeaderFormat {
     pub dos_type_offset: usize,
     pub padding_offsets: &'static [u8],
     // defaults
+    pub default_dos_version: u8,
     pub default_dos_type: Id,
     // expectations
-    pub expected_dos_version: u8,
     pub double_sided_flag_expectation: Option<(usize, u8)>,
 }
 
@@ -46,7 +46,7 @@ impl Header {
     ) -> Header {
         Header {
             first_directory_sector: disk_format.first_directory_location(),
-            disk_dos_version_type: header_format.expected_dos_version,
+            disk_dos_version_type: header_format.default_dos_version,
             disk_name: name.clone(),
             disk_id: id.clone(),
             dos_type: header_format.default_dos_type,

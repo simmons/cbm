@@ -21,7 +21,7 @@ static HEADER_FORMAT: HeaderFormat = HeaderFormat {
     dos_type_offset: 0x19,
     padding_offsets: &[0x14, 0x15, 0x18, 0x1B, 0x1C],
     default_dos_type: Id([b'3', b'D']),
-    expected_dos_version: 0x44,
+    default_dos_version: 0x44,
     double_sided_flag_expectation: None,
 };
 
