@@ -58,15 +58,11 @@ impl Header {
         let blocks = blocks.borrow();
         let block = blocks.sector(format.location)?;
 
-        // We only handle disks with the standard CBM DOS type for its format (e.g.
-        // "2A" for 1541).  Some alternate disk formats (ProfDOS, PrologicDOS
-        // 40-track, ProSpeed 40-track) will use a different type, but we don't
-        // currently support those formats.  Any unexpected value most likely
-        // indicates that the disk image is unformatted.
+        // This dos_type field is a composite of the "directory DOS version" and the
+        // "directory format type" fields. (TODO: These should probably be made distinct
+        // fields.) We don't enforce any particular values when reading or writing
+        // disks. See the notes in the cbm::disk module documentation for full details.
         let dos_type = Id::from_bytes(&block[format.dos_type_offset..format.dos_type_offset + 2]);
-        if dos_type != format.expected_dos_type {
-            return Err(DiskError::InvalidHeader.into());
-        }
 
         // We only handle disks with the standard CBM DOS version for its
         // particular format (e.g. 0x41 "A" for 1541, 0x44 "D" for 1581, etc.).
