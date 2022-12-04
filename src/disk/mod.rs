@@ -1,4 +1,95 @@
 //! Traits, structs, and functions relating to disk images.
+//!
+//! This crate supports the following disk image types:
+//!
+//! 1. **D64**. Images of this type represent a 5¼-inch single-sided 170KB disk
+//!    as used in Commodore 1541 disk drives.
+//! 2. **D71**. Images of this type represent a 5¼-inch double-sided 340KB disk
+//!    as used in Commodore 1571 disk drives.
+//! 3. **D81**. Images of this type represent a 3½-inch double-sided 800KB disk
+//!    as used in Commodore 1581 disk drives.
+//!
+//! We assume the files and directories are arranged according to the formats
+//! used by the CBM DOS ROMs of the respective drive models. The elements common
+//! to these formats are known today as
+//! [CBMFS](http://justsolve.archiveteam.org/wiki/CBMFS). Enhancements to the
+//! CBMFS format (e.g. GEOS-formatted disks) may be accommodated where possible.
+//!
+//! # Notes on compatibility with DOS version and format type fields
+//!
+//! Version `0.1.0` of this crate was rather restrictive about requiring certain
+//! metadata in disk image headers to match the expected values used in common
+//! CBM ROMs. The thinking was that unrecognized values would denote the use of
+//! formats other than the ones supported by the crate. However, these
+//! restrictions have caused problems with disk images that diverge from these
+//! expectations, yet implement a CBMFS-compatible format and remain perfectly
+//! readable. Version `0.2.0` onward will reduce these restrictions in order to
+//! match the permissiveness of the CBM DOS ROMs themselves.
+//!
+//! CBMFS disk headers include a few notable fields that reflect the DOS used to
+//! initialize the disk:
+//!
+//! 1. **Diskette format type.** (Header offset `0x02`) Also known as "disk
+//!    formatting method" (C65 ROM). The 1541 and 1571 DOS ROMs will write the
+//!    value `0x41` ("A") to this field when formatting a disk, and the 1581 and
+//!    C65 DOS ROMs will write `0x44` ("D") to this field.
+//! 2. **Directory DOS version.** (Header offset `0xA5` (1541/1571) or `0x19`
+//!    (1581).) The 1541/1571 ROMs will write `0x32` ("2") to this field, the
+//!    1581 ROM will write `0x33` ("3"), and the C65 ROM will write `0x31`
+//!    ("1"). This often corresponds to the major version of the CBM DOS, but
+//!    not always. (The 1581 drive writes "3" in spite of being version 10.0.)
+//!    The C65 DOS ROM, which is the newest of the official Commodore DOS ROMs
+//!    (circa 1991), seems to reset the version sequence. (Presumably because it
+//!    was considered a fresh start with its approach of sharing the
+//!    microprocessor of the main computer.)
+//! 3. **Directory format type.** (Header offset `0xA6` (1541/1571) or `0x1A`
+//!    (1581).) All known CBM ROMs will populate this field with exactly the
+//!    same value used in the diskette format type: The 1541/1571 ROMs will
+//!    write `0x41` ("A"), and the 1581/C65 ROMs will write `0x44` ("D").
+//!
+//!
+//! Note that the names for these fields can vary. I'm choosing to use the
+//! terminology found in the 1540 ROM source, since it makes a clear distinction
+//! between the format type as written to offset `0x02` ("diskette format type")
+//! and the format type as written to offset `0xA6` (1541/1571) or `0x1A` (1581)
+//! ("directory format type").
+//!
+//! The first field — diskette format type — is the only one that is actually
+//! ever processed by a CBM DOS ROM, which will happily try to read a disk
+//! regardless of its value, but will not write to a disk unless the value is
+//! either the expected value or `0x00`. The latter two fields are never
+//! actually consumed by a CBM DOS ROM, and are merely cosmetic — they only
+//! exist for the benefit of a human operator who would like some insight into
+//! which DOS was used to format the disk. They appear in directory listings
+//! after the disk name and disk ID.
+//!
+//! The values of these fields as found in disk images can diverge from the
+//! above expectations for several reasons:
+//!
+//! 1. Some alternate DOS implementations (ROMs or fastloaders such as ProfDOS,
+//!    PrologicDOS 40-track, and ProSpeed 40-track) will use different values
+//!    when formatting the disk.
+//!
+//! 2. Some products may use a well-known disk format without actually using the
+//!    original drive hardware, and instead include CBM DOS ROMs that write
+//!    different values. For example, the Commodore 65 / MEGA65 computer uses
+//!    1581 formatted disks without actually using a 1581 drive, and its DOS
+//!    will write a DOS version of `0x31` ("1").
+//!
+//! 3. Some disk image tools will allow writing completely arbitrary text into
+//!    the bytes normally occupied by the directory DOS version, directory
+//!    format type, and the surrounding padding. Some disk authors will use this
+//!    to cleverly include metadata such as the year of publication, and the CBM
+//!    DOS will happily render it in directory listings. For example, one MEGA65
+//!    D81 disk image seen in the wild includes "2022\xA0\xA0\xA0" at header
+//!    offset `0x16`. While the directory listing shows "2022", the disk ID is
+//!    technically "20", the directory DOS version is technically "2", and the
+//!    directory format type is technically "\xA0".
+//!
+//! Given that the value of these fields can vary in arbitrary ways, and do not
+//! seem to be enforced by CBM DOS (with the notable exception of not writing to
+//! a disk with an unrecognized diskette format type), we should not insist that
+//! these values meet any particular expectation.
 
 mod bam;
 mod block;
