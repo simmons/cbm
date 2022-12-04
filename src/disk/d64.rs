@@ -7,19 +7,21 @@ use crate::disk::bam::{BAMFormat, BAMSection};
 use crate::disk::block::{BlockDevice, BlockDeviceRef, ImageBlockDevice};
 use crate::disk::error::DiskError;
 use crate::disk::header::{Header, HeaderFormat};
-use crate::disk::{self, BAMRef, Disk, DiskFormat, Geometry, Id, Image, Location, Track, BAM};
+use crate::disk::{self, BAMRef, Disk, DiskFormat, Geometry, Image, Location, Track, BAM};
 
 /// A description of the header format for this disk image type.
 static HEADER_FORMAT: HeaderFormat = HeaderFormat {
     location: Location(18, 0),
     first_directory_offset: 0x00,
-    disk_dos_version_offset: 0x02,
+    diskette_format_type_offset: 0x02,
     disk_name_offset: 0x90,
     disk_id_offset: 0xA2,
-    dos_type_offset: 0xA5,
+    directory_dos_version_offset: 0xA5,
+    directory_format_type_offset: 0xA6,
     padding_offsets: &[0xA0, 0xA1, 0xA4, 0xA7, 0xA8, 0xA9, 0xAA],
-    default_dos_type: Id([b'2', b'A']),
-    default_dos_version: 0x41,
+    default_diskette_format_type: b'A',
+    default_directory_dos_version: b'2',
+    default_directory_format_type: b'A',
     double_sided_flag_expectation: None,
 };
 

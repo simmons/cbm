@@ -532,7 +532,13 @@ impl fmt::Display for dyn Disk {
                 write!(
                     f,
                     "{} \"{:16}\" {} {}",
-                    0, header.disk_name, header.disk_id, header.dos_type
+                    0,
+                    header.disk_name,
+                    header.disk_id,
+                    Petscii::from_bytes(&[
+                        header.directory_dos_version,
+                        header.directory_format_type
+                    ]),
                 )?;
                 if let Some(ref geos_header) = header.geos {
                     write!(f, " ({})", geos_header.id.to_escaped_string())?;
