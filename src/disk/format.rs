@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::io;
 
 use crate::disk::bam::BAMFormat;
@@ -84,10 +85,8 @@ impl DiskFormat {
     /// Return the list of locations which are reserved by CBM DOS and marked
     /// as allocated when a disk image is newly formatted.
     pub fn system_locations(&self) -> Vec<Location> {
-        let mut locations = vec![];
-
         // Header sector
-        locations.push(self.header.location);
+        let mut locations = vec![self.header.location];
 
         // BAM sectors
         for section in self.bam.sections {
@@ -122,7 +121,8 @@ impl DiskFormat {
             .system_locations()
             .iter()
             .filter(|Location(t, _)| *t == self.directory_track)
-            .count() - 1; // -1 because system_locations includes the first directory sector.
+            .count()
+            - 1; // -1 because system_locations includes the first directory sector.
 
         // Sectors available for directory entries
         let sectors = total_sectors - used_sectors;
@@ -301,35 +301,39 @@ impl DiskFormat {
             // The next candidate track is determined differently depending on whether the
             // previous track was on the directory track, below the directory
             // track (bottom half), or above the directory track (top half).
-            if track == self.directory_track {
-                // We're writing directory sectors, but there are no more directory tracks.
-                // (The 1571 track 53 "second directory track" doesn't actually hold chained
-                // directory sectors, and is mostly wasted except for a second
-                // BAM sector.)
-                return Err(DiskError::DiskFull.into());
-            } else if track < self.directory_track {
-                // Bottom half: Scan downwards.
-                track -= 1;
-                while track > 0 && self.is_reserved_track(track) {
+            match track.cmp(&self.directory_track) {
+                Ordering::Less => {
+                    // Bottom half: Scan downwards.
                     track -= 1;
+                    while track > 0 && self.is_reserved_track(track) {
+                        track -= 1;
+                    }
+                    if track < self.first_track {
+                        // No more availability downwards.  Jump to the top half.
+                        track = self.directory_track + 1;
+                        passes -= 1;
+                        reset_sector = true;
+                    }
                 }
-                if track < self.first_track {
-                    // No more availability downwards.  Jump to the top half.
-                    track = self.directory_track + 1;
-                    passes -= 1;
-                    reset_sector = true;
+                Ordering::Equal => {
+                    // We're writing directory sectors, but there are no more directory tracks.
+                    // (The 1571 track 53 "second directory track" doesn't actually hold chained
+                    // directory sectors, and is mostly wasted except for a second
+                    // BAM sector.)
+                    return Err(DiskError::DiskFull.into());
                 }
-            } else {
-                // Top half: Scan upwards.
-                track += 1;
-                while self.is_reserved_track(track) {
+                Ordering::Greater => {
+                    // Top half: Scan upwards.
                     track += 1;
-                }
-                if track > self.last_track {
-                    // No more availability upwards.  Jump to the bottom half.
-                    track = self.directory_track - 1;
-                    passes -= 1;
-                    reset_sector = true;
+                    while self.is_reserved_track(track) {
+                        track += 1;
+                    }
+                    if track > self.last_track {
+                        // No more availability upwards.  Jump to the bottom half.
+                        track = self.directory_track - 1;
+                        passes -= 1;
+                        reset_sector = true;
+                    }
                 }
             }
         }
@@ -471,7 +475,7 @@ impl<'a> Iterator for LocationIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::disk::{D64, D71, D81, Disk};
+    use crate::disk::{Disk, D64, D71, D81};
 
     const TOTAL_ALLOCABLE_BLOCKS: usize = 664;
     const REMAINING_DIRECTORY_BLOCKS: usize = 17;

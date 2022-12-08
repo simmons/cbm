@@ -152,7 +152,8 @@ impl DiskType {
         let extension = path
             .as_ref()
             .extension()
-            .and_then(|s| s.to_str()).map(|s| s.to_lowercase());
+            .and_then(|s| s.to_str())
+            .map(|s| s.to_lowercase());
 
         if let Some(extension) = extension {
             match &extension.to_lowercase()[..] {
@@ -189,9 +190,7 @@ pub fn open<P: AsRef<Path>>(path: P, writable: bool) -> io::Result<Box<dyn Disk>
         Ok(d64) => Ok(Box::new(d64)),
         Err(ref e) if is_layout_error(e) => match d71::D71::open(path, writable) {
             Ok(d71) => Ok(Box::new(d71)),
-            Err(ref e) if is_layout_error(e) => {
-                Ok(Box::new(d81::D81::open(path, writable)?))
-            }
+            Err(ref e) if is_layout_error(e) => Ok(Box::new(d81::D81::open(path, writable)?)),
             Err(e) => Err(e),
         },
         Err(e) => Err(e),
@@ -294,8 +293,8 @@ pub trait Disk {
                 let location = Location(track, sector);
                 let mut blocks = self.blocks_ref_mut();
                 let block = blocks.sector_mut(location)?;
-                for offset in 0..BLOCK_SIZE {
-                    block[offset] = 0;
+                for block_byte in block.iter_mut().take(BLOCK_SIZE) {
+                    *block_byte = 0;
                 }
             }
         }
@@ -350,10 +349,10 @@ pub trait Disk {
     fn find_directory_entry(&self, filename: &Petscii) -> io::Result<DirectoryEntry> {
         self.iter()
             .find(|x| match x {
-                &Err(_) => true,
-                &Ok(ref entry) => entry.filename == *filename,
+                Err(_) => true,
+                Ok(ref entry) => entry.filename == *filename,
             })
-            .unwrap_or(Err(DiskError::NotFound.into()))
+            .unwrap_or_else(|| Err(DiskError::NotFound.into()))
     }
 
     /// Return a `DirectoryEntry` representing the next free slot on the
@@ -478,7 +477,7 @@ pub trait Disk {
 
     /// Read a specific block from the disk, given its track and sector
     /// location.
-    fn read_sector<'a>(&self, location: Location) -> io::Result<Vec<u8>> {
+    fn read_sector(&self, location: Location) -> io::Result<Vec<u8>> {
         self.blocks_ref().sector_owned(location)
     }
 
@@ -499,10 +498,10 @@ pub trait Disk {
     }
 
     /// Return the name of this disk as found in the disk header.
-    fn name<'a>(&'a self) -> Option<&'a Petscii> {
-        match &self.header() {
-            &Ok(header) => Some(&header.disk_name),
-            &Err(_) => None,
+    fn name(&self) -> Option<&Petscii> {
+        match self.header() {
+            Ok(header) => Some(&header.disk_name),
+            Err(_) => None,
         }
     }
 
@@ -526,8 +525,8 @@ pub trait Disk {
 
 impl fmt::Display for dyn Disk {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &self.header() {
-            &Ok(header) => {
+        match self.header() {
+            Ok(header) => {
                 write!(
                     f,
                     "{} \"{:16}\" {} {}",
@@ -544,7 +543,7 @@ impl fmt::Display for dyn Disk {
                 }
                 Ok(())
             }
-            &Err(ref e) => write!(f, "Cannot read header: {}", e),
+            Err(ref e) => write!(f, "Cannot read header: {}", e),
         }
     }
 }
@@ -645,15 +644,15 @@ impl Id {
     }
 }
 
-impl Into<Petscii> for Id {
-    fn into(self) -> Petscii {
-        Petscii::from_bytes(&self.0)
+impl From<Id> for Petscii {
+    fn from(id: Id) -> Self {
+        Petscii::from_bytes(&id.0)
     }
 }
 
-impl Into<String> for Id {
-    fn into(self) -> String {
-        let p: Petscii = self.into();
+impl From<Id> for String {
+    fn from(id: Id) -> Self {
+        let p: Petscii = id.into();
         p.into()
     }
 }

@@ -52,12 +52,12 @@ impl FileType {
 impl fmt::Display for FileType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(match self {
-            &FileType::DEL => "del",
-            &FileType::SEQ => "seq",
-            &FileType::PRG => "prg",
-            &FileType::USR => "usr",
-            &FileType::REL => "rel",
-            &FileType::Unknown(_) => "unk",
+            FileType::DEL => "del",
+            FileType::SEQ => "seq",
+            FileType::PRG => "prg",
+            FileType::USR => "usr",
+            FileType::REL => "rel",
+            FileType::Unknown(_) => "unk",
         })
     }
 }
@@ -103,13 +103,13 @@ impl FileAttributes {
 
     /// Generate the byte which encodes this `FileAttributes` struct.
     pub fn to_byte(&self) -> u8 {
-        let mut byte = match &self.file_type {
-            &FileType::DEL => FILE_TYPE_DEL,
-            &FileType::SEQ => FILE_TYPE_SEQ,
-            &FileType::PRG => FILE_TYPE_PRG,
-            &FileType::USR => FILE_TYPE_USR,
-            &FileType::REL => FILE_TYPE_REL,
-            &FileType::Unknown(b) => b,
+        let mut byte = match self.file_type {
+            FileType::DEL => FILE_TYPE_DEL,
+            FileType::SEQ => FILE_TYPE_SEQ,
+            FileType::PRG => FILE_TYPE_PRG,
+            FileType::USR => FILE_TYPE_USR,
+            FileType::REL => FILE_TYPE_REL,
+            FileType::Unknown(b) => b,
         };
         if self.unused_bit {
             byte |= FILE_ATTRIB_UNUSED_MASK
@@ -523,12 +523,11 @@ impl PositionedData for DirectoryEntry {
 
 impl fmt::Display for DirectoryEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let quoted_filename = format!("\"{}\"", self.filename);
         write!(
             f,
             "{:<4} {:18}{}",
-            self.file_size,
-            format!("\"{}\"", self.filename),
-            self.file_attributes
+            self.file_size, quoted_filename, self.file_attributes
         )?;
         if f.alternate() {
             // verbose
@@ -543,13 +542,11 @@ impl fmt::Display for DirectoryEntry {
 
 impl fmt::Debug for DirectoryEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let quoted_filename = format!("\"{}\"", self.filename);
         write!(
             f,
             "{},{},{:?} @ {:?}",
-            format!("\"{}\"", self.filename),
-            self.file_size,
-            self.file_attributes,
-            self.position
+            quoted_filename, self.file_size, self.file_attributes, self.position
         )
     }
 }
@@ -757,8 +754,8 @@ where
         block[0] = 0x00;
         block[1] = 0xFF;
         // All other bytes should be zeroed.
-        for offset in 2..BLOCK_SIZE {
-            block[offset] = 0;
+        for block_byte in block.iter_mut().take(BLOCK_SIZE).skip(2) {
+            *block_byte = 0;
         }
         new_entry = DirectoryEntry::from_positioned_bytes(
             &block[0..ENTRY_SIZE],

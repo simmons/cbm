@@ -83,7 +83,7 @@ impl GEOSFile {
 }
 
 impl FileOps for GEOSFile {
-    fn entry<'a>(&'a self) -> &'a DirectoryEntry {
+    fn entry(&self) -> &DirectoryEntry {
         &self.entry
     }
 
@@ -102,10 +102,8 @@ impl FileOps for GEOSFile {
 
         // If this is a VLIR file, deallocate the VLIR records.
         if let Some(ref records) = self.vlir {
-            for record in records.iter() {
-                if let Some(record) = record {
-                    chain::remove_chain(self.blocks.clone(), self.bam.clone(), *record)?;
-                }
+            for record in records.iter().flatten() {
+                chain::remove_chain(self.blocks.clone(), self.bam.clone(), *record)?;
             }
         }
         // Mark the file as "DEL" and "open" (*DEL) in the directory.
@@ -211,14 +209,11 @@ impl FileOps for GEOSFile {
             locations.push(info_location);
         }
         if let Some(ref vlir_record_starts) = self.vlir {
-            for vlir_record_start in vlir_record_starts {
-                if let Some(vlir_record_start) = vlir_record_start {
-                    let record_locations =
-                        ChainIterator::new(self.blocks.clone(), *vlir_record_start)
-                            .map(|r| r.map(|cs| cs.location))
-                            .collect::<io::Result<Vec<_>>>()?;
-                    locations.extend(record_locations);
-                }
+            for vlir_record_start in vlir_record_starts.iter().flatten() {
+                let record_locations = ChainIterator::new(self.blocks.clone(), *vlir_record_start)
+                    .map(|r| r.map(|cs| cs.location))
+                    .collect::<io::Result<Vec<_>>>()?;
+                locations.extend(record_locations);
             }
         }
         locations.sort();

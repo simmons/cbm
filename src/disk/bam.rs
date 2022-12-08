@@ -102,7 +102,7 @@ impl BAMWriter {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 pub struct BAMEntry {
     pub free_sectors: u8,
     pub sector_map: u64,
@@ -139,8 +139,8 @@ impl BAMEntry {
         // Write as many sector bitmap bytes as are present in the output buffer.
         // (1541/1571 has 3 bytes, 1581 has 5 bytes.)
         let mut sector_map = self.sector_map;
-        for i in 0..bitmap.len() {
-            bitmap[i] = (sector_map & 0xFF) as u8;
+        for output_byte_ref in bitmap.iter_mut() {
+            *output_byte_ref = (sector_map & 0xFF) as u8;
             sector_map >>= 8;
         }
     }
@@ -180,15 +180,6 @@ impl BAMEntry {
     }
 }
 
-impl Default for BAMEntry {
-    fn default() -> Self {
-        BAMEntry {
-            free_sectors: 0,
-            sector_map: 0,
-        }
-    }
-}
-
 pub type BAMRef = Rc<RefCell<BAM>>;
 
 pub struct BAM {
@@ -217,27 +208,29 @@ impl BAM {
 
         for section in disk_format.bam.sections {
             // Read the block containing BAM free sector counts for this section.
-            let mut block = blocks.sector(section.free_location)?;
+            let free_counts_block = blocks.sector(section.free_location)?;
 
-            // Read BAM free sector counts from the block
-            let mut free_sector_counts: Vec<u8> = Vec::with_capacity(section.tracks);
-            for i in 0..section.tracks {
-                let offset = section.free_offset + i * section.free_stride;
-                free_sector_counts.push(block[offset]);
-            }
-
-            // Do we need to load a different block for reading the bitmaps?
-            if section.bitmap_location != section.free_location {
+            // Do we need to load a different block for reading the allocation bitmaps?
+            let bitmaps_block = if section.bitmap_location != section.free_location {
                 // Read the block containing BAM bitmaps for this section.
-                block = blocks.sector(section.bitmap_location)?;
-            }
+                blocks.sector(section.bitmap_location)?
+            } else {
+                // Reuse the same block loaded for the free counts.
+                free_counts_block
+            };
 
-            // Read BAM bitmaps from the block
+            // Process each track in this section
             for i in 0..section.tracks {
+                // Read the BAM free sector count for this track
+                let free_sector_count =
+                    free_counts_block[section.free_offset + i * section.free_stride];
+
+                // Read the BAM bitmaps
                 let offset = section.bitmap_offset + i * section.bitmap_stride;
                 entries.push(BAMEntry::from_bytes(
-                    free_sector_counts[i],
-                    &block[offset..offset + section.bitmap_size],
+                    //free_sector_counts[i],
+                    free_sector_count,
+                    &bitmaps_block[offset..offset + section.bitmap_size],
                 ));
             }
         }
@@ -280,12 +273,12 @@ impl BAM {
         blocks_free
     }
 
-    pub fn entry<'a>(&'a self, track: u8) -> io::Result<&'a BAMEntry> {
+    pub fn entry(&self, track: u8) -> io::Result<&BAMEntry> {
         self.check_validity()?;
         Ok(&self.entries[(track - 1) as usize])
     }
 
-    pub fn entry_mut<'a>(&'a mut self, track: u8) -> io::Result<&'a mut BAMEntry> {
+    pub fn entry_mut(&mut self, track: u8) -> io::Result<&mut BAMEntry> {
         self.check_validity()?;
         Ok(&mut self.entries[(track - 1) as usize])
     }

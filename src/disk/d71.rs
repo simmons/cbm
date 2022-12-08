@@ -266,18 +266,18 @@ impl Disk for D71 {
         self.blocks.borrow_mut()
     }
 
-    fn header<'a>(&'a self) -> io::Result<&'a Header> {
-        match &self.header {
-            &Some(ref header) => Ok(header),
-            &None => Err(DiskError::Unformatted.into()),
+    fn header(&self) -> io::Result<&Header> {
+        match self.header {
+            Some(ref header) => Ok(header),
+            None => Err(DiskError::Unformatted.into()),
         }
     }
 
-    fn header_mut<'a>(&'a mut self) -> io::Result<&'a mut Header> {
+    fn header_mut(&mut self) -> io::Result<&mut Header> {
         self.blocks.borrow().check_writability()?;
-        match &mut self.header {
-            &mut Some(ref mut header) => Ok(header),
-            &mut None => Err(DiskError::Unformatted.into()),
+        match self.header {
+            Some(ref mut header) => Ok(header),
+            None => Err(DiskError::Unformatted.into()),
         }
     }
 
@@ -294,9 +294,9 @@ impl Disk for D71 {
     }
 
     fn bam(&self) -> io::Result<BAMRef> {
-        match &self.bam {
-            &Some(ref bam) => Ok(bam.clone()),
-            &None => Err(DiskError::Unformatted.into()),
+        match self.bam {
+            Some(ref bam) => Ok(bam.clone()),
+            None => Err(DiskError::Unformatted.into()),
         }
     }
 

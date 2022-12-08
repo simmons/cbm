@@ -15,11 +15,11 @@ pub type BlockDeviceRef = Rc<RefCell<dyn BlockDevice>>;
 
 pub trait BlockDevice {
     fn check_writability(&self) -> io::Result<()>;
-    fn geometry<'a>(&'a self) -> &'a Geometry;
-    fn sector<'a>(&'a self, location: Location) -> io::Result<&'a [u8]>;
-    fn sector_mut<'a>(&'a mut self, location: Location) -> io::Result<&'a mut [u8]>;
-    fn error_table<'a>(&'a self) -> io::Result<Option<&'a [u8]>>;
-    fn error_table_mut<'a>(&'a mut self) -> io::Result<Option<&'a mut [u8]>>;
+    fn geometry(&self) -> &Geometry;
+    fn sector(&self, location: Location) -> io::Result<&[u8]>;
+    fn sector_mut(&mut self, location: Location) -> io::Result<&mut [u8]>;
+    fn error_table(&self) -> io::Result<Option<&[u8]>>;
+    fn error_table_mut(&mut self) -> io::Result<Option<&mut [u8]>>;
     fn flush(&mut self) -> io::Result<()>;
 
     fn sector_owned(&self, location: Location) -> io::Result<Vec<u8>> {
@@ -106,29 +106,29 @@ impl BlockDevice for ImageBlockDevice {
     }
 
     #[inline]
-    fn geometry<'a>(&'a self) -> &'a Geometry {
+    fn geometry(&self) -> &Geometry {
         self.geometry
     }
 
-    fn sector<'a>(&'a self, location: Location) -> io::Result<&'a [u8]> {
+    fn sector(&self, location: Location) -> io::Result<&[u8]> {
         let offset = self.get_offset(location)?;
         self.image.slice(offset, BLOCK_SIZE)
     }
 
-    fn sector_mut<'a>(&'a mut self, location: Location) -> io::Result<&'a mut [u8]> {
+    fn sector_mut(&mut self, location: Location) -> io::Result<&mut [u8]> {
         self.image.check_writability()?;
         let offset = self.get_offset(location)?;
         self.image.slice_mut(offset, BLOCK_SIZE)
     }
 
-    fn error_table<'a>(&'a self) -> io::Result<Option<&'a [u8]>> {
+    fn error_table(&self) -> io::Result<Option<&[u8]>> {
         match self.geometry.error_table_offset() {
             Some(offset) => Ok(Some(self.image.slice(offset, self.image.len() - offset)?)),
             None => Ok(None),
         }
     }
 
-    fn error_table_mut<'a>(&'a mut self) -> io::Result<Option<&'a mut [u8]>> {
+    fn error_table_mut(&mut self) -> io::Result<Option<&mut [u8]>> {
         self.image.check_writability()?;
         match self.geometry.error_table_offset() {
             Some(offset) => {

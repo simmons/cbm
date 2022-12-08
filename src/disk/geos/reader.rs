@@ -75,7 +75,7 @@ impl GEOSReader {
             is_vlir: entry.is_vlir()?,
             info_location: entry
                 .info_location()?
-                .ok_or(DiskError::GEOSInfoNotFound.to_io_error())?,
+                .ok_or_else(|| DiskError::GEOSInfoNotFound.to_io_error())?,
             start_location: entry.first_sector,
             chains: VecDeque::new(),
         })
@@ -130,14 +130,14 @@ impl GEOSReader {
 
         // Render the new VLIR block where (track, sector) pairs have been converted
         // into (block count, final bytes) pairs.
-        let mut block = conversions.iter().fold(
-            Vec::with_capacity(BLOCK_DATA_SIZE),
-            |mut v, conversion| {
-                v.push(conversion.0);
-                v.push(conversion.1);
-                v
-            },
-        );
+        let mut block =
+            conversions
+                .iter()
+                .fold(Vec::with_capacity(BLOCK_DATA_SIZE), |mut v, conversion| {
+                    v.push(conversion.0);
+                    v.push(conversion.1);
+                    v
+                });
         // Pad remainder of block with zeros.
         block.resize(BLOCK_DATA_SIZE, 0);
 

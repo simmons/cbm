@@ -29,15 +29,7 @@ pub enum ValidationError {
 impl error::Error for ValidationError {
     /// Provide terse descriptions of the errors.
     fn description(&self) -> &str {
-        use self::ValidationError::*;
-        match *self {
-            Unknown => "Unknown error",
-            SystemSectorNotAllocated(_) => "System sector not allocated",
-            SectorMisallocated(_) => "Sector misallocated",
-            SectorMisoccupied(_, _) => "Sector misoccupied",
-            SectorOveroccupied(_, _, _) => "Sector occupied by multiple files",
-            FileScanError(_, _) => "File scan error",
-        }
+        self.message()
     }
 }
 
@@ -57,7 +49,22 @@ impl fmt::Display for ValidationError {
                 location, filename1, filename2
             ),
             FileScanError(ref e, ref filename) => write!(f, "Error scanning {:?}: {}", filename, e),
-            _ => f.write_str(&self.to_string()),
+            _ => f.write_str(self.message()),
+        }
+    }
+}
+
+impl ValidationError {
+    /// Provide terse descriptions of the errors.
+    fn message(&self) -> &str {
+        use self::ValidationError::*;
+        match *self {
+            Unknown => "Unknown error",
+            SystemSectorNotAllocated(_) => "System sector not allocated",
+            SectorMisallocated(_) => "Sector misallocated",
+            SectorMisoccupied(_, _) => "Sector misoccupied",
+            SectorOveroccupied(_, _, _) => "Sector occupied by multiple files",
+            FileScanError(_, _) => "File scan error",
         }
     }
 }
@@ -176,8 +183,9 @@ where
             continue;
         }
         let filename = occupied_sector_map
-            .get(misoccupied_sector).cloned()
-            .unwrap_or("None".into());
+            .get(misoccupied_sector)
+            .cloned()
+            .unwrap_or_else(|| "None".into());
         errors.push(ValidationError::SectorMisoccupied(
             *misoccupied_sector,
             filename.clone(),
