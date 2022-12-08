@@ -302,9 +302,7 @@ fn cmd_bam_edit(
         }
     }
     // Write the updated BAM
-    bam.flush()?;
-
-    Ok(())
+    bam.flush()
 }
 
 /// Open an existing CBM file from the specified disk image for reading.
@@ -381,8 +379,7 @@ fn cmd_read(
     let mut reader = open_cbm_reader(diskimage, source_filename)?;
     let mut writer = open_fs_writer(destination_filename)?;
     io::copy(&mut reader, &mut writer)?;
-    writer.flush()?;
-    Ok(())
+    writer.flush()
 }
 
 fn cmd_write(
@@ -395,8 +392,7 @@ fn cmd_write(
     let mut reader = open_fs_reader(source_filename)?;
     let mut writer = open_cbm_writer(diskimage, destination_filename, file_type)?;
     io::copy(&mut reader, &mut writer)?;
-    writer.flush()?;
-    Ok(())
+    writer.flush()
 }
 
 fn cmd_append(
@@ -408,8 +404,7 @@ fn cmd_append(
     let mut reader = open_fs_reader(source_filename)?;
     let mut writer = open_cbm_appender(diskimage, destination_filename)?;
     io::copy(&mut reader, &mut writer)?;
-    writer.flush()?;
-    Ok(())
+    writer.flush()
 }
 
 fn cmd_geosread(
@@ -421,8 +416,7 @@ fn cmd_geosread(
     let mut reader = open_geos_reader(diskimage, source_filename)?;
     let mut writer = open_fs_writer(destination_filename)?;
     io::copy(&mut reader, &mut writer)?;
-    writer.flush()?;
-    Ok(())
+    writer.flush()
 }
 
 fn cmd_create(diskimage: &str) -> io::Result<()> {
@@ -442,8 +436,7 @@ fn cmd_create(diskimage: &str) -> io::Result<()> {
         .create_new(true)
         .open(diskimage)?;
     io::copy(&mut FillReader::new(0x00, geometry.size()), &mut file)?;
-    file.flush()?;
-    Ok(())
+    file.flush()
 }
 
 fn cmd_dir(diskimage: &str, verbosity: u64) -> io::Result<()> {
@@ -473,8 +466,7 @@ fn cmd_format(diskimage: &str, name: &str, id: &str) -> io::Result<()> {
     let id_bytes: &[u8] = id.as_bytes();
 
     let mut disk = disk::open(diskimage, true)?;
-    disk.write_format(&name.into(), &id_bytes.into())?;
-    Ok(())
+    disk.write_format(&name.into(), &id_bytes.into())
 }
 
 fn cmd_rename(diskimage: &str, original_filename: &str, new_filename: &str) -> io::Result<()> {
@@ -497,8 +489,7 @@ fn cmd_dump(diskimage: &str, filename: Option<&str>) -> io::Result<()> {
         }
         None => disk.dump(&mut io::stdout())?,
     }
-    io::stdout().flush()?;
-    Ok(())
+    io::stdout().flush()
 }
 
 fn cmd_validate(diskimage: &str) -> io::Result<()> {
