@@ -20,7 +20,7 @@ const STDINOUT_PSEUDOFILENAME: &str = "-";
 fn main() {
     // Parse command-line arguments
     let app = App::new("Commodore Disk Image Utility")
-        .version("0.1.0")
+        .version(clap::crate_version!())
         .about("Read, write, and understand D64/D71/D81 disk images.")
         .setting(AppSettings::SubcommandRequiredElseHelp)
         .arg(Arg::with_name("diskimage").required(true))
