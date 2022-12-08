@@ -130,8 +130,8 @@ impl BAMEntry {
         }
 
         BAMEntry {
-            free_sectors: free_sectors,
-            sector_map: sector_map,
+            free_sectors,
+            sector_map,
         }
     }
 
@@ -141,7 +141,7 @@ impl BAMEntry {
         let mut sector_map = self.sector_map;
         for i in 0..bitmap.len() {
             bitmap[i] = (sector_map & 0xFF) as u8;
-            sector_map = sector_map >> 8;
+            sector_map >>= 8;
         }
     }
 
@@ -157,13 +157,13 @@ impl BAMEntry {
 
     #[inline]
     pub fn allocate(&mut self, sector: u8) {
-        self.sector_map = self.sector_map & !(1u64 << sector);
+        self.sector_map &= !(1u64 << sector);
         self.update_free_sectors();
     }
 
     #[inline]
     pub fn free(&mut self, sector: u8) {
-        self.sector_map = self.sector_map | (1u64 << sector);
+        self.sector_map |= 1u64 << sector;
         self.update_free_sectors();
     }
 
@@ -174,7 +174,7 @@ impl BAMEntry {
             if map & 1 == 1 {
                 count += 1;
             }
-            map = map >> 1;
+            map >>= 1;
         }
         self.free_sectors = count;
     }
@@ -332,7 +332,7 @@ impl BAM {
                 if map & 1 == 0 {
                     locations.push(Location::new(track as u8 + 1, sector));
                 }
-                map = map >> 1;
+                map >>= 1;
             }
         }
         Ok(locations)
@@ -346,7 +346,7 @@ impl BAM {
                 if map & 1 == 1 {
                     locations.push(Location::new(track as u8 + 1, sector));
                 }
-                map = map >> 1;
+                map >>= 1;
             }
         }
         Ok(locations)
@@ -367,7 +367,7 @@ impl fmt::Debug for BAM {
             for _ in 0..self.format.tracks[track + 1].sectors {
                 let c: char = if map & 1 == 1 { '.' } else { 'x' };
                 f.write_char(c)?;
-                map = map >> 1;
+                map >>= 1;
             }
             f.write_char('\n')?;
         }

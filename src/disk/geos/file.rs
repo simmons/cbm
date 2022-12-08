@@ -183,16 +183,14 @@ impl FileOps for GEOSFile {
             } else {
                 writeln!(writer, "VLIR records: {}", available_record_count)?;
             }
-        } else {
-            if verbosity > 0 {
-                let locations =
-                    ChainIterator::new(self.blocks.clone(), self.entry.first_sector).locations()?;
-                writeln!(
-                    writer,
-                    "Occupied sectors: {}",
-                    Location::format_locations(&locations)
-                )?;
-            }
+        } else if verbosity > 0 {
+            let locations =
+                ChainIterator::new(self.blocks.clone(), self.entry.first_sector).locations()?;
+            writeln!(
+                writer,
+                "Occupied sectors: {}",
+                Location::format_locations(&locations)
+            )?;
         }
         if let Some(info) = self.info()? {
             writeln!(writer, "GEOS info block:")?;

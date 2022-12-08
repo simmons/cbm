@@ -83,7 +83,7 @@ pub static GEOMETRY_ERRORS: Geometry = Geometry {
 
 static ALLOWED_GEOMETRIES: [&Geometry; 2] = [&GEOMETRY, &GEOMETRY_ERRORS];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static TRACKS: [Track; 81] = [
     Track { sectors: 0,  sector_offset:    0, byte_offset: 0, }, // There is no sector 0
     Track { sectors: 40, sector_offset:    0, byte_offset: 0x00000, }, // 1

@@ -68,7 +68,7 @@ impl ChainIterator {
     /// Create a new chain iterator starting at the specified location.
     pub fn new(blocks: BlockDeviceRef, starting_sector: Location) -> ChainIterator {
         ChainIterator {
-            blocks: blocks,
+            blocks,
             next_sector: Some(starting_sector),
             visited_sectors: HashSet::new(),
             block: [0u8; BLOCK_SIZE],
@@ -170,7 +170,7 @@ impl io::Read for ChainReader {
 
                     // Reduce the provided buffer slice to the unwritten portion.
                     let buf_ref = &mut buf;
-                    let value: &mut [u8] = ::std::mem::replace(buf_ref, &mut []);
+                    let value: &mut [u8] = std::mem::take(buf_ref);
                     *buf_ref = &mut value[nbytes..];
                 }
                 None => {

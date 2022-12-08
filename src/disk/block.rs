@@ -52,13 +52,13 @@ pub trait BlockDevice {
     fn dump(&self, writer: &mut dyn Write) -> io::Result<()> {
         let locations = LocationIterator::from_geometry(self.geometry());
         for location in locations {
-            writeln!(writer, "")?;
+            writeln!(writer)?;
             writeln!(writer, "track {:02} sector {:02}", location.0, location.1)?;
             let block = self.sector(location)?;
             writeln!(writer, "{}", util::hex(block))?;
         }
         if let Some(error_table) = self.error_table()? {
-            writeln!(writer, "")?;
+            writeln!(writer)?;
             writeln!(writer, "Error table:")?;
             let mut index = 0;
             for track in 1..=self.geometry().tracks {
@@ -112,13 +112,13 @@ impl BlockDevice for ImageBlockDevice {
 
     fn sector<'a>(&'a self, location: Location) -> io::Result<&'a [u8]> {
         let offset = self.get_offset(location)?;
-        Ok(self.image.slice(offset, BLOCK_SIZE)?)
+        self.image.slice(offset, BLOCK_SIZE)
     }
 
     fn sector_mut<'a>(&'a mut self, location: Location) -> io::Result<&'a mut [u8]> {
         self.image.check_writability()?;
         let offset = self.get_offset(location)?;
-        Ok(self.image.slice_mut(offset, BLOCK_SIZE)?)
+        self.image.slice_mut(offset, BLOCK_SIZE)
     }
 
     fn error_table<'a>(&'a self) -> io::Result<Option<&'a [u8]>> {

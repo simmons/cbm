@@ -418,8 +418,8 @@ impl DirectoryEntry {
         // Determine the file storage scheme
         let scheme = if file_attributes.file_type == FileType::REL {
             Scheme::Relative
-        } else if GEOSExtra::is_entry_geos(&bytes) {
-            if GEOSExtra::is_entry_vlir(&bytes) {
+        } else if GEOSExtra::is_entry_geos(bytes) {
+            if GEOSExtra::is_entry_vlir(bytes) {
                 Scheme::GEOSVLIR
             } else {
                 Scheme::GEOSSequential
@@ -606,7 +606,7 @@ impl DirectoryIterator {
             block_iter,
             chunks: vec![].into_iter(), // Arrange to return None the first time.
             position: Position {
-                location: location,
+                location,
                 offset: 0,
                 size: ENTRY_SIZE as u8,
             },
@@ -820,7 +820,7 @@ mod tests {
         for _ in 0..MAX_NEW_ENTRIES {
             let mut entry = match next_free_directory_entry(&mut disk) {
                 Ok(entry) => entry,
-                Err(ref e) => match DiskError::from_io_error(&e) {
+                Err(ref e) => match DiskError::from_io_error(e) {
                     Some(ref e) if *e == DiskError::DiskFull => {
                         disk_full = true;
                         break;

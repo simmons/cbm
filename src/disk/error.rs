@@ -67,9 +67,7 @@ impl error::Error for DiskError {
     /// For errors which encapsulate another error, allow the caller to fetch
     /// the contained error.
     fn cause(&self) -> Option<&dyn error::Error> {
-        match *self {
-            _ => None,
-        }
+        None
     }
 }
 
@@ -131,10 +129,7 @@ impl DiskError {
     /// underlying `DiskError`.  If not, return None.
     pub fn from_io_error(error: &io::Error) -> Option<DiskError> {
         match error.get_ref() {
-            Some(e) => match e.downcast_ref::<DiskError>() {
-                Some(disk_error) => Some(disk_error.clone()),
-                None => None,
-            },
+            Some(e) => e.downcast_ref::<DiskError>().cloned(),
             None => None,
         }
     }
@@ -182,7 +177,7 @@ impl DiskError {
 
 impl PartialEq<io::Error> for DiskError {
     fn eq(&self, other: &io::Error) -> bool {
-        match DiskError::from_io_error(&other) {
+        match DiskError::from_io_error(other) {
             Some(ref e) if e == self => true,
             _ => false,
         }

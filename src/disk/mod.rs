@@ -152,8 +152,7 @@ impl DiskType {
         let extension = path
             .as_ref()
             .extension()
-            .and_then(|s| s.to_str())
-            .and_then(|s| Some(s.to_lowercase()));
+            .and_then(|s| s.to_str()).map(|s| s.to_lowercase());
 
         if let Some(extension) = extension {
             match &extension.to_lowercase()[..] {
@@ -187,15 +186,15 @@ pub fn open<P: AsRef<Path>>(path: P, writable: bool) -> io::Result<Box<dyn Disk>
     }
     let path = path.as_ref();
     match d64::D64::open(path, writable) {
-        Ok(d64) => return Ok(Box::new(d64)),
+        Ok(d64) => Ok(Box::new(d64)),
         Err(ref e) if is_layout_error(e) => match d71::D71::open(path, writable) {
-            Ok(d71) => return Ok(Box::new(d71)),
+            Ok(d71) => Ok(Box::new(d71)),
             Err(ref e) if is_layout_error(e) => {
-                return Ok(Box::new(d81::D81::open(path, writable)?));
+                Ok(Box::new(d81::D81::open(path, writable)?))
             }
-            Err(e) => return Err(e),
+            Err(e) => Err(e),
         },
-        Err(e) => return Err(e),
+        Err(e) => Err(e),
     }
 }
 
@@ -377,12 +376,12 @@ pub trait Disk {
     /// filename.
     fn check_filename_availability(&self, filename: &Petscii) -> io::Result<()> {
         // Check that the new filename doesn't already exist.
-        match self.find_directory_entry(&filename) {
+        match self.find_directory_entry(filename) {
             Ok(_) => Err(DiskError::FileExists.into()),
             Err(e) => match DiskError::from_io_error(&e) {
                 Some(DiskError::NotFound) => Ok(()),
                 Some(disk_error) => Err(disk_error.into()),
-                _ => Err(e.into()),
+                _ => Err(e),
             },
         }
     }
@@ -443,8 +442,8 @@ pub trait Disk {
         // is a tail block of zero length.
         let mut blocks = self.blocks_ref_mut();
         {
-            let mut block = blocks.sector_mut(first_sector)?;
-            chain::CHAIN_LINK_ZERO.to_bytes(&mut block);
+            let block = blocks.sector_mut(first_sector)?;
+            chain::CHAIN_LINK_ZERO.to_bytes(block);
         }
 
         // Populate and write the directory entry for this file.
@@ -480,7 +479,7 @@ pub trait Disk {
     /// Read a specific block from the disk, given its track and sector
     /// location.
     fn read_sector<'a>(&self, location: Location) -> io::Result<Vec<u8>> {
-        Ok(self.blocks_ref().sector_owned(location)?)
+        self.blocks_ref().sector_owned(location)
     }
 
     /// Write a block of data to a specific location on the disk.
@@ -502,7 +501,7 @@ pub trait Disk {
     /// Return the name of this disk as found in the disk header.
     fn name<'a>(&'a self) -> Option<&'a Petscii> {
         match &self.header() {
-            &Ok(ref header) => Some(&header.disk_name),
+            &Ok(header) => Some(&header.disk_name),
             &Err(_) => None,
         }
     }
@@ -667,7 +666,7 @@ impl AsRef<[u8]> for Id {
 
 impl AsRef<Id> for Id {
     fn as_ref(&self) -> &Id {
-        &self
+        self
     }
 }
 
@@ -676,7 +675,7 @@ impl<'a> From<&'a [u8]> for Id {
         // Best-effort only.  Use the first two bytes for the Id, using zeros
         // for any byte not present.
         Id([
-            if bytes.len() > 0 { bytes[0] } else { 0 },
+            if !bytes.is_empty() { bytes[0] } else { 0 },
             if bytes.len() > 1 { bytes[1] } else { 0 },
         ])
     }

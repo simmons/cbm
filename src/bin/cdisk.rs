@@ -164,7 +164,7 @@ fn main() {
             m.value_of("source_filename").unwrap(),
             m.value_of("destination_filename"),
             m.value_of("type")
-                .and_then(|t| FileType::from_string(t))
+                .and_then(FileType::from_string)
                 .unwrap_or(FileType::SEQ),
         ),
         ("append", Some(m)) => cmd_append(
@@ -311,7 +311,7 @@ fn cmd_bam_edit(
 fn open_cbm_file(diskimage: &str, filename: &str) -> io::Result<File> {
     // Open the CBM file
     let disk = disk::open(diskimage, false)?;
-    Ok(disk.open_file(&filename.into())?)
+    disk.open_file(&filename.into())
 }
 
 /// Open a file on a CBM disk image for reading.

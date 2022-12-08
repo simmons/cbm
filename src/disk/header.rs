@@ -52,7 +52,7 @@ impl Header {
             first_directory_sector: disk_format.first_directory_location(),
             disk_format_type: header_format.default_disk_format_type,
             disk_name: name.clone(),
-            disk_id: id.clone(),
+            disk_id: *id,
             directory_format_type: header_format.default_directory_format_type,
             directory_dos_version: header_format.default_directory_dos_version,
             geos: None,

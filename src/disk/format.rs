@@ -190,7 +190,7 @@ impl DiskFormat {
                 // Sector is available.
                 return Ok(Location(track, sector));
             }
-            map = map >> 1;
+            map >>= 1;
         }
 
         // Unless the BAM is corrupt (free_sectors is not consistent with the bitmap),
@@ -506,7 +506,7 @@ mod tests {
         loop {
             let next = match format.next_free_block(&bam, location) {
                 Ok(l) => l,
-                Err(ref e) => match DiskError::from_io_error(&e) {
+                Err(ref e) => match DiskError::from_io_error(e) {
                     Some(ref e) if *e == DiskError::DiskFull => {
                         disk_full = true;
                         break;

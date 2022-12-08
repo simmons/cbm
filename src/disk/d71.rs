@@ -88,7 +88,7 @@ pub static GEOMETRY_ERRORS: Geometry = Geometry {
 
 static ALLOWED_GEOMETRIES: [&Geometry; 2] = [&GEOMETRY, &GEOMETRY_ERRORS];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static TRACKS: [Track; TRACK_COUNT+1] = [
     Track { sectors: 0,  sector_offset:    0, byte_offset: 0, }, // There is no sector 0
     Track { sectors: 21, sector_offset:    0, byte_offset: 0x00000, }, // 1
@@ -268,7 +268,7 @@ impl Disk for D71 {
 
     fn header<'a>(&'a self) -> io::Result<&'a Header> {
         match &self.header {
-            &Some(ref header) => Ok(&header),
+            &Some(ref header) => Ok(header),
             &None => Err(DiskError::Unformatted.into()),
         }
     }

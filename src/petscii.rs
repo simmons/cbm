@@ -13,7 +13,7 @@ const NONE: char = char::REPLACEMENT_CHARACTER;
 const PETSCII_NONE: u8 = 0x7F;
 
 // From: http://style64.org/petscii/
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static PETSCII_TO_CHAR_MAP: [char; 256] = [
     // control codes
     NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE,
@@ -250,7 +250,7 @@ mod tests {
                 let c = a * 16 + b;
                 print!("{} ", petscii_to_unicode_char(c));
             }
-            println!("");
+            println!();
         }
     }
 
@@ -307,7 +307,7 @@ mod tests {
         // Test IntoIterator for Petscii
         let mut bytes_expected = (&bytes[..]).to_vec();
         for byte in petscii.clone() {
-            assert!(bytes_expected.len() > 0);
+            assert!(!bytes_expected.is_empty());
             let byte_expected = bytes_expected.remove(0);
             assert_eq!(byte_expected, byte);
         }
@@ -315,7 +315,7 @@ mod tests {
         // Test IntoIterator for &Petscii
         let mut bytes_expected = (&bytes[..]).to_vec();
         for byte in &petscii {
-            assert!(bytes_expected.len() > 0);
+            assert!(!bytes_expected.is_empty());
             let byte_expected = bytes_expected.remove(0);
             assert_eq!(byte_expected, *byte);
         }

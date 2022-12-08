@@ -154,12 +154,12 @@ where
             };
         }
     }
-    let occupied_sectors = HashSet::from_iter(occupied_sector_map.keys().map(|l| l.clone()));
+    let occupied_sectors = HashSet::from_iter(occupied_sector_map.keys().copied());
     let unoccupied_sectors = invert_locations(&occupied_sectors, format);
 
     // Confirm all system sectors are still allocated
     for location in system_sectors.iter() {
-        if !allocated_sectors.contains(&location) {
+        if !allocated_sectors.contains(location) {
             errors.push(ValidationError::SystemSectorNotAllocated(*location));
         }
     }
@@ -176,8 +176,7 @@ where
             continue;
         }
         let filename = occupied_sector_map
-            .get(misoccupied_sector)
-            .map(|f| f.clone())
+            .get(misoccupied_sector).cloned()
             .unwrap_or("None".into());
         errors.push(ValidationError::SectorMisoccupied(
             *misoccupied_sector,

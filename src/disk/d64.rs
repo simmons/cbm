@@ -86,7 +86,7 @@ static ALLOWED_GEOMETRIES: [&Geometry; 4] = [
     &GEOMETRY_40_ERRORS,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static TRACKS: [Track; 41] = [
     Track { sectors: 0,  sector_offset: 0,   byte_offset: 0, }, // There is no track 0.
     Track { sectors: 21, sector_offset: 0,   byte_offset: 0x00000, }, // 1
@@ -247,7 +247,7 @@ impl Disk for D64 {
 
     fn header<'a>(&'a self) -> io::Result<&'a Header> {
         match &self.header {
-            &Some(ref header) => Ok(&header),
+            &Some(ref header) => Ok(header),
             &None => Err(DiskError::Unformatted.into()),
         }
     }
