@@ -10,12 +10,12 @@ use cbm::disk::{self, D64, D71, D81, DiskType};
 use cbm::Petscii;
 
 // Possible exit codes
-static _EXIT_SUCCESS: i32 = 0;
-static EXIT_FAILURE: i32 = 1;
+const _EXIT_SUCCESS: i32 = 0;
+const EXIT_FAILURE: i32 = 1;
 
 /// If a dash is specified for a filename, this indicates that the user wants
 /// to read from standard input or write to standard output.
-static STDINOUT_PSEUDOFILENAME: &str = "-";
+const STDINOUT_PSEUDOFILENAME: &str = "-";
 
 fn main() {
     // Parse command-line arguments
