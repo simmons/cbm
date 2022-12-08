@@ -114,7 +114,7 @@ use std::ops::{Index, IndexMut};
 use std::path::Path;
 use std::rc::Rc;
 
-use crate::disk::bam::{BAMEntry, BAMRef, BAM};
+use crate::disk::bam::{Bam, BamEntry, BamRef};
 use crate::disk::block::{BlockDevice, BlockDeviceRef, Location, BLOCK_SIZE};
 use crate::disk::directory::{DirectoryEntry, DirectoryIterator, FileType};
 use crate::disk::file::{File, LinearFile, Scheme};
@@ -198,9 +198,9 @@ pub fn open<P: AsRef<Path>>(path: P, writable: bool) -> io::Result<Box<dyn Disk>
 }
 
 /// This is a helper method that Disk implementations can use to set BAM.
-fn set_bam(bam_ref: &mut Option<BAMRef>, new_bam: Option<BAM>) {
+fn set_bam(bam_ref: &mut Option<BamRef>, new_bam: Option<Bam>) {
     // We must be careful to replace the contents of the existing RefCell
-    // (if any) so that any holders of the Rc<RefCell<BAM>> will use the
+    // (if any) so that any holders of the Rc<RefCell<Bam>> will use the
     // new BAM and not try to use the old BAM, which could cause
     // corruption.
     match new_bam {
@@ -234,8 +234,8 @@ pub trait Disk {
     fn header_mut(&mut self) -> io::Result<&mut Header>;
     fn set_header(&mut self, header: Option<Header>);
     fn flush_header(&mut self) -> io::Result<()>;
-    fn bam(&self) -> io::Result<BAMRef>;
-    fn set_bam(&mut self, bam: Option<BAM>);
+    fn bam(&self) -> io::Result<BamRef>;
+    fn set_bam(&mut self, bam: Option<Bam>);
 
     /// Initialize the disk by reading the format metadata, if any.  This may
     /// be called again, for example, when the BAM or header have been
@@ -244,7 +244,7 @@ pub trait Disk {
         let disk_format = self.native_disk_format();
         let mut header = Header::read(self.blocks().clone(), disk_format.header).ok();
         let mut bam = match header {
-            Some(_) => BAM::read(self.blocks(), disk_format).ok(),
+            Some(_) => Bam::read(self.blocks(), disk_format).ok(),
             None => {
                 // It doesn't make sense to have an unreadable BAM with a valid header --
                 // consider the disk image to be unformatted.
@@ -318,7 +318,7 @@ pub trait Disk {
 
         // Write a fresh BAM
         {
-            let mut bam = BAM::new(self.blocks(), disk_format);
+            let mut bam = Bam::new(self.blocks(), disk_format);
 
             // Perform the initial allocations for this format.
             for location in disk_format.system_locations() {

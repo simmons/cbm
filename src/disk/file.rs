@@ -2,7 +2,7 @@
 
 use std::io::{self, Read, Write};
 
-use crate::disk::bam::BAMRef;
+use crate::disk::bam::BamRef;
 use crate::disk::block::BlockDeviceRef;
 use crate::disk::block::Location;
 use crate::disk::block::Position;
@@ -221,12 +221,12 @@ impl FileOps for File {
 /// fall into this category.
 pub struct LinearFile {
     blocks: BlockDeviceRef,
-    bam: BAMRef,
+    bam: BamRef,
     entry: DirectoryEntry,
 }
 
 impl LinearFile {
-    pub fn new(blocks: BlockDeviceRef, bam: BAMRef, entry: DirectoryEntry) -> LinearFile {
+    pub fn new(blocks: BlockDeviceRef, bam: BamRef, entry: DirectoryEntry) -> LinearFile {
         LinearFile { blocks, bam, entry }
     }
 }
@@ -318,7 +318,7 @@ impl FileOps for LinearFile {
 /// so-called "side sectors". Relative file support is read-only for now.
 pub struct RelativeFile {
     blocks: BlockDeviceRef,
-    bam: BAMRef,
+    bam: BamRef,
     entry: DirectoryEntry,
     record_size: usize,
     data_sectors: Vec<Location>,
@@ -333,7 +333,7 @@ const SIDE_SECTOR_DATA_OFFSET: usize = 0x10;
 impl RelativeFile {
     pub fn new(
         blocks: BlockDeviceRef,
-        bam: BAMRef,
+        bam: BamRef,
         entry: DirectoryEntry,
     ) -> io::Result<RelativeFile> {
         // Extract directory entry metadata

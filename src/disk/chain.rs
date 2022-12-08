@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::io::{self, Write};
 
-use crate::disk::bam::BAMRef;
+use crate::disk::bam::BamRef;
 use crate::disk::block::{BlockDeviceRef, Location, BLOCK_SIZE};
 use crate::disk::directory::DirectoryEntry;
 use crate::disk::error::DiskError;
@@ -198,7 +198,7 @@ impl io::Read for ChainReader {
 /// allocation algorithm for the disk format.
 pub struct ChainWriter {
     blocks: BlockDeviceRef,
-    bam: BAMRef,
+    bam: BamRef,
     entry: DirectoryEntry,
     location: Location,
     block: Vec<u8>,
@@ -208,7 +208,7 @@ pub struct ChainWriter {
 impl ChainWriter {
     pub fn new(
         blocks: BlockDeviceRef,
-        bam: BAMRef,
+        bam: BamRef,
         entry: DirectoryEntry,
         start: Location,
     ) -> io::Result<ChainWriter> {
@@ -363,7 +363,7 @@ impl io::Write for ChainWriter {
     }
 }
 
-pub fn remove_chain(blocks: BlockDeviceRef, bam: BAMRef, start: Location) -> io::Result<()> {
+pub fn remove_chain(blocks: BlockDeviceRef, bam: BamRef, start: Location) -> io::Result<()> {
     // Read the whole chain first to be sure we can visit every block with no
     // errors.
     let locations = ChainIterator::new(blocks, start).locations()?;

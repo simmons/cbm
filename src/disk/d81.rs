@@ -3,11 +3,11 @@ use std::io;
 use std::path::Path;
 use std::rc::Rc;
 
-use crate::disk::bam::{BAMFormat, BAMSection};
+use crate::disk::bam::{BamFormat, BamSection};
 use crate::disk::block::{BlockDevice, BlockDeviceRef, ImageBlockDevice};
 use crate::disk::error::DiskError;
 use crate::disk::header::{Header, HeaderFormat};
-use crate::disk::{self, BAMRef, Disk, DiskFormat, Geometry, Image, Location, Track, BAM};
+use crate::disk::{self, Bam, BamRef, Disk, DiskFormat, Geometry, Image, Location, Track};
 
 const TRACK_COUNT: usize = 80;
 
@@ -28,9 +28,9 @@ static HEADER_FORMAT: HeaderFormat = HeaderFormat {
 };
 
 /// A description of the BAM format for this disk image type.
-static BAM_FORMAT: BAMFormat = BAMFormat {
+static BAM_FORMAT: BamFormat = BamFormat {
     sections: &[
-        BAMSection {
+        BamSection {
             bitmap_location: Location(40, 1),
             bitmap_offset: 0x11,
             bitmap_size: 5,
@@ -40,7 +40,7 @@ static BAM_FORMAT: BAMFormat = BAMFormat {
             free_stride: 6,
             tracks: 40,
         },
-        BAMSection {
+        BamSection {
             bitmap_location: Location(40, 2),
             bitmap_offset: 0x11,
             bitmap_size: 5,
@@ -173,7 +173,7 @@ static TRACKS: [Track; 81] = [
 pub struct D81 {
     blocks: Rc<RefCell<ImageBlockDevice>>,
     header: Option<Header>,
-    bam: Option<BAMRef>,
+    bam: Option<BamRef>,
     format: Option<DiskFormat>,
 }
 
@@ -298,14 +298,14 @@ impl Disk for D81 {
         header.write(self.blocks.clone(), &HEADER_FORMAT)
     }
 
-    fn bam(&self) -> io::Result<BAMRef> {
+    fn bam(&self) -> io::Result<BamRef> {
         match self.bam {
             Some(ref bam) => Ok(bam.clone()),
             None => Err(DiskError::Unformatted.into()),
         }
     }
 
-    fn set_bam(&mut self, bam: Option<BAM>) {
+    fn set_bam(&mut self, bam: Option<Bam>) {
         disk::set_bam(&mut self.bam, bam);
     }
 }

@@ -1,6 +1,6 @@
 use std::io::{self, Read};
 
-use crate::disk::bam::BAMRef;
+use crate::disk::bam::BamRef;
 use crate::disk::block::BlockDeviceRef;
 use crate::disk::block::Location;
 use crate::disk::chain::{self, ChainIterator, ChainReader};
@@ -17,13 +17,13 @@ use crate::disk::geos::GEOSInfo;
 /// Index Record (VLIR) file.
 pub struct GEOSFile {
     blocks: BlockDeviceRef,
-    bam: BAMRef,
+    bam: BamRef,
     entry: DirectoryEntry,
     vlir: Option<Vec<Option<Location>>>,
 }
 
 impl GEOSFile {
-    pub fn new(blocks: BlockDeviceRef, bam: BAMRef, entry: DirectoryEntry) -> io::Result<GEOSFile> {
+    pub fn new(blocks: BlockDeviceRef, bam: BamRef, entry: DirectoryEntry) -> io::Result<GEOSFile> {
         // If VLIR, parse the index block.
         let vlir = if entry.is_vlir()? {
             let blocks = blocks.borrow();
