@@ -4,7 +4,6 @@ pub const SPRITE_HEIGHT: usize = 21;
 
 /// Store the data associated with a sprite image.  Multicolor sprites are not
 /// supported at this time.
-
 pub struct Sprite {
     data: Vec<u8>,
 }

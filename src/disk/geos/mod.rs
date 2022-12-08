@@ -188,7 +188,7 @@ impl Display for GEOSFileType {
 
 use std::ascii;
 
-/// GEOS uses regular ASCII to store text, as opposed to Petscii or Unicode.
+/// GEOS uses regular ASCII to store text, as opposed to PETSCII or Unicode.
 
 pub struct GEOSString {
     data: Vec<u8>,

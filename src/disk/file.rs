@@ -46,11 +46,11 @@ pub enum Scheme {
 /// A File represents a file that has been opened from a CBM disk image.
 ///
 /// In the 1980's, non-linear file structures were more common, and such files
-/// can't directly map to our sdfsdfsdf modern notion of files as a single
-/// sequence of bytes.  This makes it impractical to implement simple Read and
-/// Write traits.  Our approach is to allow the caller to open a `File`, which
-/// itself is an enum containing more specialized types which map to various
-/// file layout schemes.
+/// can't directly map to our modern notion of files as a single sequence of
+/// bytes.  This makes it impractical to implement simple Read and Write traits.
+/// Our approach is to allow the caller to open a `File`, which itself is an
+/// enum containing more specialized types which map to various file layout
+/// schemes.
 pub enum File {
     /// The file is a regular, linear file that can be fully read from the
     /// beginning to the end. Most CBM PRG, SEQ, and USR files fall into
@@ -62,7 +62,6 @@ pub enum File {
     /// entry, and index information in a number of "side sectors" to allow
     /// random access of specific records.  The contents may be accessed
     /// using the contained `RelativeFile`.
-    /// `RelativeFile` object.
     Relative(RelativeFile),
     /// The file is a GEOS sequential file.  In addition to the linear byte
     /// stream, this scheme stores additional GEOS-specific metadata in an
@@ -88,7 +87,7 @@ pub trait FileOps {
     /// Delete the file represented by this object.
     fn delete(&mut self) -> io::Result<()>;
     /// Return the number of records that this file offers.  This will always
-    /// be 1 for `Linear` or `GEOSSequential`.)
+    /// be 1 for `Linear` or `GEOSSequential`.
     fn record_count(&self) -> io::Result<usize>;
     /// Read an entire record into memory and return it.
     fn record(&self, index: usize) -> io::Result<Vec<u8>>;

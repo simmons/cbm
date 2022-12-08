@@ -21,6 +21,7 @@ pub struct Track {
 
 #[derive(Clone)]
 pub struct DiskFormat {
+    /// The directory track used for this format.
     pub directory_track: u8,
     /// This should be pointed to from the header sector, but the various image
     /// format documents say not to trust it.
@@ -43,7 +44,7 @@ pub struct DiskFormat {
     /// non-standard methods.
     pub last_nonstandard_track: u8,
     /// The default interleave.  This may be changed on a per-image basis to
-    /// support other layout varients such as GEOS-formatted disks.
+    /// support other layout variants such as GEOS-formatted disks.
     pub interleave: u8,
     /// Drives may use a special interleave for directory tracks, since
     /// scanning directories usually doesn't involve I/O between the host
