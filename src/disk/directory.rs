@@ -928,7 +928,7 @@ mod tests {
         assert_eq!(entry.file_attributes.locked_flag, false);
         assert_eq!(entry.file_attributes.closed_flag, true);
         assert_eq!(entry.first_sector, Location(0x11, 0x05));
-        assert_eq!(entry.filename, Petscii::from_str("ascii codes"));
+        assert_eq!(entry.filename, Petscii::from_str_lossy("ascii codes"));
         assert_eq!(entry.extra, Extra::default());
         assert_eq!(entry.file_size, 0x0006);
     }
