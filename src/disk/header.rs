@@ -14,7 +14,7 @@ pub struct HeaderFormat {
     pub location: Location,
     // offsets
     pub first_directory_offset: usize,
-    pub diskette_format_type_offset: usize,
+    pub disk_format_type_offset: usize,
     pub disk_name_offset: usize,
     pub disk_id_offset: usize,
     pub directory_dos_version_offset: usize,
@@ -22,7 +22,7 @@ pub struct HeaderFormat {
     pub padding_offsets: &'static [u8],
     // DOS version and format type defaults
     // See the notes in the cbm::disk module documentation for full details.
-    pub default_diskette_format_type: u8,
+    pub default_disk_format_type: u8,
     pub default_directory_dos_version: u8,
     pub default_directory_format_type: u8,
     // expectations
@@ -33,11 +33,11 @@ pub struct Header {
     // http://unusedino.de/ec64/technical/formats/d64.html
     // says to not trust this field.
     pub first_directory_sector: Location,
-    pub diskette_format_type: u8,
+    pub disk_format_type: u8,
     pub disk_name: Petscii,
     pub disk_id: Id,
-    pub directory_format_type: u8,
     pub directory_dos_version: u8,
+    pub directory_format_type: u8,
     pub geos: Option<GEOSDiskHeader>,
 }
 
@@ -50,7 +50,7 @@ impl Header {
     ) -> Header {
         Header {
             first_directory_sector: disk_format.first_directory_location(),
-            diskette_format_type: header_format.default_diskette_format_type,
+            disk_format_type: header_format.default_disk_format_type,
             disk_name: name.clone(),
             disk_id: id.clone(),
             directory_format_type: header_format.default_directory_format_type,
@@ -70,13 +70,13 @@ impl Header {
         let directory_dos_version = block[format.directory_dos_version_offset];
         let directory_format_type = block[format.directory_format_type_offset];
 
-        // This field is the diskette DOS version. We don't enforce any particular value
+        // This field is the diskette format type. We don't enforce any particular value
         // for this field. A real CBM DOS would allow the disk to be read normally
         // regardless of the value of this field, but would error if write attempts are
         // made to a disk with a DOS version other than 0x00 or the expected DOS
         // version. See the notes in the cbm::disk module documentation for full
         // details.
-        let diskette_format_type = block[format.diskette_format_type_offset];
+        let disk_format_type = block[format.disk_format_type_offset];
 
         // All 1571 disk images should have the double-side flag set.
         if let Some((offset, value)) = format.double_sided_flag_expectation {
@@ -87,7 +87,7 @@ impl Header {
 
         Ok(Header {
             first_directory_sector: Location::from_bytes(&block[format.first_directory_offset..]),
-            diskette_format_type,
+            disk_format_type,
             disk_name: Petscii::from_bytes(
                 &block[format.disk_name_offset..format.disk_name_offset + disk::DISK_NAME_SIZE],
             ),
@@ -110,7 +110,7 @@ impl Header {
         {
             self.first_directory_sector
                 .to_bytes(&mut block[format.first_directory_offset..]);
-            block[format.diskette_format_type_offset] = self.diskette_format_type;
+            block[format.disk_format_type_offset] = self.disk_format_type;
             self.disk_name
                 .write_bytes_with_padding(
                     &mut block
