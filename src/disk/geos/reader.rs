@@ -94,6 +94,9 @@ impl GEOSReader {
         fn scan_chain(blocks: BlockDeviceRef, start: Location) -> io::Result<(u8, u8)> {
             let (count, last) = ChainIterator::new(blocks, start).fold(Ok((0, 0)), |acc, b| {
                 acc.and_then(|(count, _last)| {
+                    // Note we subtract one from the data length to convert to CBM's "offset of last
+                    // used byte within the full block containing a two block track and sector
+                    // prefix".
                     b.map(|b| (count + 1, b.data.len() - 1))
                 })
             })?;
