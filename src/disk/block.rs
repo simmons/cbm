@@ -157,7 +157,7 @@ impl Location {
         assert!(bytes.len() >= 2);
         Location(bytes[0], bytes[1])
     }
-    pub fn to_bytes(&self, bytes: &mut [u8]) {
+    pub fn write_bytes(&self, bytes: &mut [u8]) {
         assert!(bytes.len() >= 2);
         bytes[0] = self.0;
         bytes[1] = self.1;

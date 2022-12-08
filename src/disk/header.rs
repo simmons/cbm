@@ -109,7 +109,7 @@ impl Header {
         // Render our header struct into the block
         {
             self.first_directory_sector
-                .to_bytes(&mut block[format.first_directory_offset..]);
+                .write_bytes(&mut block[format.first_directory_offset..]);
             block[format.disk_format_type_offset] = self.disk_format_type;
             self.disk_name
                 .write_bytes_with_padding(

@@ -338,7 +338,7 @@ impl GEOSExtra {
     pub fn to_bytes(&self, bytes: &mut [u8]) {
         assert_eq!(bytes.len(), EXTRA_SIZE);
         self.info_block
-            .to_bytes(&mut bytes[Self::INFO_BLOCK_OFFSET..]);
+            .write_bytes(&mut bytes[Self::INFO_BLOCK_OFFSET..]);
         bytes[Self::STRUCTURE_OFFSET] = self.structure.to_byte();
         bytes[Self::GEOS_FILE_TYPE_OFFSET] = self.geos_file_type.to_byte();
         bytes[Self::YEAR_OFFSET] = self.year;

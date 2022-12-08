@@ -38,7 +38,7 @@ impl ChainLink {
     pub fn to_bytes(&self, bytes: &mut [u8]) {
         assert!(bytes.len() >= 2);
         match &self {
-            ChainLink::Next(location) => location.to_bytes(bytes),
+            ChainLink::Next(location) => location.write_bytes(bytes),
             ChainLink::Tail(size) => {
                 assert!(*size >= 2 && *size <= 256);
                 bytes[0] = 0x00;
@@ -287,7 +287,7 @@ impl ChainWriter {
                 return Err(e);
             }
         };
-        next_location.to_bytes(block);
+        next_location.write_bytes(block);
 
         // Update state
         self.location = next_location;
