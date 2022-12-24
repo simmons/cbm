@@ -7,7 +7,7 @@ use crate::disk::bam::{BAMFormat, BAMSection};
 use crate::disk::block::{BlockDevice, BlockDeviceRef, ImageBlockDevice};
 use crate::disk::error::DiskError;
 use crate::disk::header::{Header, HeaderFormat};
-use crate::disk::{self, BAMRef, Disk, DiskFormat, Geometry, Id, Image, Location, Track, BAM};
+use crate::disk::{self, BAMRef, Disk, DiskFormat, Geometry, Image, Location, Track, BAM};
 
 const TRACK_COUNT: usize = 80;
 
@@ -15,13 +15,15 @@ const TRACK_COUNT: usize = 80;
 static HEADER_FORMAT: HeaderFormat = HeaderFormat {
     location: Location(40, 0),
     first_directory_offset: 0x00,
-    disk_dos_version_offset: 0x02,
+    disk_format_type_offset: 0x02,
     disk_name_offset: 0x04,
     disk_id_offset: 0x16,
-    dos_type_offset: 0x19,
+    directory_dos_version_offset: 0x19,
+    directory_format_type_offset: 0x1A,
     padding_offsets: &[0x14, 0x15, 0x18, 0x1B, 0x1C],
-    expected_dos_version: 0x44,
-    expected_dos_type: Id([b'3', b'D']),
+    default_disk_format_type: b'D',
+    default_directory_dos_version: b'3',
+    default_directory_format_type: b'D',
     double_sided_flag_expectation: None,
 };
 
