@@ -193,7 +193,7 @@ impl Bam {
     pub fn new(blocks_ref: BlockDeviceRef, disk_format: &DiskFormat) -> Bam {
         let mut bam_entries = vec![];
         for track in 1..=disk_format.bam.tracks() {
-            bam_entries.push(BamEntry::new(disk_format.tracks[track as usize].sectors));
+            bam_entries.push(BamEntry::new(disk_format.tracks[track].sectors));
         }
         Bam::from_entries(
             disk_format,

@@ -583,12 +583,10 @@ impl Geometry {
         size: usize,
         geometries: &'a [&'static Geometry],
     ) -> Option<&'a Geometry> {
-        for geometry in geometries.iter() {
-            if geometry.size() == size {
-                return Some(geometry);
-            }
-        }
-        None
+        geometries
+            .iter()
+            .find(|&geometry| geometry.size() == size)
+            .copied()
     }
 
     /// Return the size of this geometry, if it didn't have an error table
