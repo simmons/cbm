@@ -12,7 +12,7 @@ pub struct Sprite {
 /// These codepoints are block element glyphs that can represent any combination of a 2x2 pixel
 /// bitmap.  The most significant two bits are the upper pixels, and the least significant bits are
 /// the lower pixels.
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static UNICODE_BLOCK_ELEMENTS: [char; 16] = [
     ' ', '\u{2597}', '\u{2596}', '\u{2584}',
     '\u{259D}', '\u{2590}', '\u{259E}', '\u{259F}',

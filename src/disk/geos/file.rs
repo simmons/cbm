@@ -1,6 +1,6 @@
 use std::io::{self, Read};
 
-use crate::disk::bam::BAMRef;
+use crate::disk::bam::BamRef;
 use crate::disk::block::BlockDeviceRef;
 use crate::disk::block::Location;
 use crate::disk::chain::{self, ChainIterator, ChainReader};
@@ -17,13 +17,13 @@ use crate::disk::geos::GEOSInfo;
 /// Index Record (VLIR) file.
 pub struct GEOSFile {
     blocks: BlockDeviceRef,
-    bam: BAMRef,
+    bam: BamRef,
     entry: DirectoryEntry,
     vlir: Option<Vec<Option<Location>>>,
 }
 
 impl GEOSFile {
-    pub fn new(blocks: BlockDeviceRef, bam: BAMRef, entry: DirectoryEntry) -> io::Result<GEOSFile> {
+    pub fn new(blocks: BlockDeviceRef, bam: BamRef, entry: DirectoryEntry) -> io::Result<GEOSFile> {
         // If VLIR, parse the index block.
         let vlir = if entry.is_vlir()? {
             let blocks = blocks.borrow();
@@ -83,7 +83,7 @@ impl GEOSFile {
 }
 
 impl FileOps for GEOSFile {
-    fn entry<'a>(&'a self) -> &'a DirectoryEntry {
+    fn entry(&self) -> &DirectoryEntry {
         &self.entry
     }
 
@@ -102,10 +102,8 @@ impl FileOps for GEOSFile {
 
         // If this is a VLIR file, deallocate the VLIR records.
         if let Some(ref records) = self.vlir {
-            for record in records.iter() {
-                if let Some(record) = record {
-                    chain::remove_chain(self.blocks.clone(), self.bam.clone(), *record)?;
-                }
+            for record in records.iter().flatten() {
+                chain::remove_chain(self.blocks.clone(), self.bam.clone(), *record)?;
             }
         }
         // Mark the file as "DEL" and "open" (*DEL) in the directory.
@@ -183,16 +181,14 @@ impl FileOps for GEOSFile {
             } else {
                 writeln!(writer, "VLIR records: {}", available_record_count)?;
             }
-        } else {
-            if verbosity > 0 {
-                let locations =
-                    ChainIterator::new(self.blocks.clone(), self.entry.first_sector).locations()?;
-                writeln!(
-                    writer,
-                    "Occupied sectors: {}",
-                    Location::format_locations(&locations)
-                )?;
-            }
+        } else if verbosity > 0 {
+            let locations =
+                ChainIterator::new(self.blocks.clone(), self.entry.first_sector).locations()?;
+            writeln!(
+                writer,
+                "Occupied sectors: {}",
+                Location::format_locations(&locations)
+            )?;
         }
         if let Some(info) = self.info()? {
             writeln!(writer, "GEOS info block:")?;
@@ -213,14 +209,11 @@ impl FileOps for GEOSFile {
             locations.push(info_location);
         }
         if let Some(ref vlir_record_starts) = self.vlir {
-            for vlir_record_start in vlir_record_starts {
-                if let Some(vlir_record_start) = vlir_record_start {
-                    let record_locations =
-                        ChainIterator::new(self.blocks.clone(), *vlir_record_start)
-                            .map(|r| r.map(|cs| cs.location))
-                            .collect::<io::Result<Vec<_>>>()?;
-                    locations.extend(record_locations);
-                }
+            for vlir_record_start in vlir_record_starts.iter().flatten() {
+                let record_locations = ChainIterator::new(self.blocks.clone(), *vlir_record_start)
+                    .map(|r| r.map(|cs| cs.location))
+                    .collect::<io::Result<Vec<_>>>()?;
+                locations.extend(record_locations);
             }
         }
         locations.sort();

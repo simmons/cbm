@@ -1,6 +1,6 @@
-
 use std::char;
 use std::fmt;
+use std::fmt::Display;
 use std::fmt::Write;
 use std::iter::IntoIterator;
 use std::ops::Index;
@@ -13,7 +13,7 @@ const NONE: char = char::REPLACEMENT_CHARACTER;
 const PETSCII_NONE: u8 = 0x7F;
 
 // From: http://style64.org/petscii/
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static PETSCII_TO_CHAR_MAP: [char; 256] = [
     // control codes
     NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE, NONE,
@@ -78,12 +78,19 @@ fn petscii_to_unicode_char(byte: u8) -> char {
     PETSCII_TO_CHAR_MAP[byte as usize]
 }
 
-fn petscii_to_unicode_string(petscii: &[u8]) -> String {
-    let mut string = String::with_capacity(petscii.len());
-    for petscii_char in petscii {
-        string.push(petscii_to_unicode_char(*petscii_char));
+#[derive(Debug)]
+pub enum PetsciiError {
+    // Attempt to write rendered data into a buffer of insufficient size.
+    BufferExceeded,
+}
+
+impl Display for PetsciiError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use PetsciiError::*;
+        match self {
+            BufferExceeded => f.write_str("buffer exceeded"),
+        }
     }
-    string
 }
 
 /// Commodore's 8-bit computers used an unusual variant of ASCII commonly known as "PETSCII".
@@ -112,12 +119,12 @@ impl Petscii {
     /// We only translate Unicode code points that happen to be present in our
     /// PETSCII mapping. This includes letters, numbers, punctuation, and a
     /// handful of block graphic code points.
-    pub fn from_str(string: &str) -> Petscii {
+    pub fn from_str_lossy(string: &str) -> Petscii {
         let mut petscii_bytes = Vec::with_capacity(string.len());
         'outer: for c in string.chars() {
             // This is inefficient, but hopefully seldom used.
-            for p in 0..PETSCII_TO_CHAR_MAP.len() {
-                if PETSCII_TO_CHAR_MAP[p] == c {
+            for (p, mapping) in PETSCII_TO_CHAR_MAP.iter().enumerate() {
+                if *mapping == c {
                     petscii_bytes.push(p as u8);
                     continue 'outer;
                 }
@@ -127,7 +134,7 @@ impl Petscii {
         Petscii(petscii_bytes.to_owned())
     }
 
-    pub fn as_bytes<'a>(&'a self) -> &'a [u8] {
+    pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }
 
@@ -135,46 +142,53 @@ impl Petscii {
         self.0.len()
     }
 
-    pub fn to_string(&self) -> String {
-        petscii_to_unicode_string(&self.0[..])
+    pub fn is_empty(&self) -> bool {
+        self.0.len() == 0
     }
 
-    pub fn write_bytes_with_padding(&self, bytes: &mut [u8], pad_byte: u8) -> Result<(), ()> {
+    // Copy this Petscii string into the provided byte slice, padding any remaining
+    // bytes. Return Err(PetsciiError::BufferExceeded) if the destination buffer is
+    // not large enough to hold the Petscii bytes.
+    pub fn write_bytes_with_padding(
+        &self,
+        bytes: &mut [u8],
+        pad_byte: u8,
+    ) -> Result<(), PetsciiError> {
         let src_len = self.0.len();
         let dst_len = bytes.len();
         if src_len > dst_len {
-            return Err(());
+            return Err(PetsciiError::BufferExceeded);
         } else {
             let _ = &bytes[..src_len].copy_from_slice(&self.0);
-            for i in src_len..dst_len {
-                bytes[i] = pad_byte;
+            for byte_ref in bytes.iter_mut().take(dst_len).skip(src_len) {
+                *byte_ref = pad_byte;
             }
         }
         Ok(())
     }
 }
 
-impl Into<String> for Petscii {
-    fn into(self) -> String {
-        self.to_string()
+impl From<Petscii> for String {
+    fn from(petscii: Petscii) -> Self {
+        petscii.to_string()
     }
 }
 
 impl From<String> for Petscii {
     fn from(string: String) -> Petscii {
-        Self::from_str(&string)
+        Self::from_str_lossy(&string)
     }
 }
 
 impl<'a> From<&'a String> for Petscii {
     fn from(string: &String) -> Petscii {
-        Self::from_str(string)
+        Self::from_str_lossy(string)
     }
 }
 
 impl<'a> From<&'a str> for Petscii {
     fn from(string: &str) -> Petscii {
-        Self::from_str(string)
+        Self::from_str_lossy(string)
     }
 }
 
@@ -250,7 +264,7 @@ mod tests {
                 let c = a * 16 + b;
                 print!("{} ", petscii_to_unicode_char(c));
             }
-            println!("");
+            println!();
         }
     }
 
@@ -307,7 +321,7 @@ mod tests {
         // Test IntoIterator for Petscii
         let mut bytes_expected = (&bytes[..]).to_vec();
         for byte in petscii.clone() {
-            assert!(bytes_expected.len() > 0);
+            assert!(!bytes_expected.is_empty());
             let byte_expected = bytes_expected.remove(0);
             assert_eq!(byte_expected, byte);
         }
@@ -315,7 +329,7 @@ mod tests {
         // Test IntoIterator for &Petscii
         let mut bytes_expected = (&bytes[..]).to_vec();
         for byte in &petscii {
-            assert!(bytes_expected.len() > 0);
+            assert!(!bytes_expected.is_empty());
             let byte_expected = bytes_expected.remove(0);
             assert_eq!(byte_expected, *byte);
         }
@@ -379,7 +393,7 @@ mod tests {
         let str_slice: &str = &str_slice_storage[..];
         let string: String = String::from("String test.");
         let string_ref: &String = &string;
-        let petscii: Petscii = Petscii::from_str("Petscii test.");
+        let petscii: Petscii = Petscii::from_str_lossy("Petscii test.");
 
         assert_eq!(process_move(str_slice), str_slice_storage);
         assert_eq!(process_move(string.clone()), string);

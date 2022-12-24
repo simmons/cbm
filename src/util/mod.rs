@@ -1,4 +1,4 @@
-use std;
+
 use std::fmt;
 
 /// Write a hexdump of the provided byte slice.
@@ -48,7 +48,7 @@ pub fn hexdump(
 
         offset += COLUMNS;
         if offset < buffer.len() {
-            writeln!(f, "")?;
+            writeln!(f)?;
         }
     }
     Ok(())

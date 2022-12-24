@@ -75,7 +75,7 @@ impl GEOSReader {
             is_vlir: entry.is_vlir()?,
             info_location: entry
                 .info_location()?
-                .ok_or(DiskError::GEOSInfoNotFound.to_io_error())?,
+                .ok_or_else(|| DiskError::GEOSInfoNotFound.to_io_error())?,
             start_location: entry.first_sector,
             chains: VecDeque::new(),
         })
@@ -94,12 +94,10 @@ impl GEOSReader {
         fn scan_chain(blocks: BlockDeviceRef, start: Location) -> io::Result<(u8, u8)> {
             let (count, last) = ChainIterator::new(blocks, start).fold(Ok((0, 0)), |acc, b| {
                 acc.and_then(|(count, _last)| {
-                    b.and_then(
-                        // Note we subtract one from the data length to convert to CBM's
-                        // "offset of last used byte within the full block containing a
-                        // two block track and sector prefix".
-                        |b| Ok((count + 1, b.data.len() - 1)),
-                    )
+                    // Note we subtract one from the data length to convert to CBM's "offset of last
+                    // used byte within the full block containing a two block track and sector
+                    // prefix".
+                    b.map(|b| (count + 1, b.data.len() - 1))
                 })
             })?;
             if count > ::std::u8::MAX as usize {
@@ -132,21 +130,21 @@ impl GEOSReader {
 
         // Render the new VLIR block where (track, sector) pairs have been converted
         // into (block count, final bytes) pairs.
-        let mut block = conversions.iter().fold(
-            Vec::with_capacity(BLOCK_DATA_SIZE),
-            |mut v, conversion| {
-                v.push(conversion.0);
-                v.push(conversion.1);
-                v
-            },
-        );
+        let mut block =
+            conversions
+                .iter()
+                .fold(Vec::with_capacity(BLOCK_DATA_SIZE), |mut v, conversion| {
+                    v.push(conversion.0);
+                    v.push(conversion.1);
+                    v
+                });
         // Pad remainder of block with zeros.
         block.resize(BLOCK_DATA_SIZE, 0);
 
         // The converted index block will be fed to the reader in VLIRIndexBlock state.
         self.buffer = block;
         // Save the chain readers for later processing in the Records state.
-        self.chains = chains.into_iter().filter_map(|chain| chain).collect();
+        self.chains = chains.into_iter().flatten().collect();
 
         Ok(())
     }
@@ -222,14 +220,14 @@ impl Read for GEOSReader {
 
             // Reduce the output buffer to the unwritten portion.
             let buf_ref = &mut buf;
-            let value: &mut [u8] = ::std::mem::replace(buf_ref, &mut []);
+            let value: &mut [u8] = std::mem::take(buf_ref);
             *buf_ref = &mut value[bytes..];
 
             // Reduce the input buffer
             self.buffer.drain(0..bytes);
 
             // Input buffer drained -- transition to next step
-            if self.buffer.len() == 0 {
+            if self.buffer.is_empty() {
                 // State transition
                 self.next_state()?;
                 if let GEOSReaderState::Finished = self.state {

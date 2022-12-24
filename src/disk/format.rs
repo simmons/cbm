@@ -1,11 +1,12 @@
+use std::cmp::Ordering;
 use std::io;
 
-use crate::disk::bam::BAMFormat;
+use crate::disk::bam::BamFormat;
 use crate::disk::block::BLOCK_SIZE;
 use crate::disk::directory::ENTRY_SIZE;
 use crate::disk::error::DiskError;
 use crate::disk::header::HeaderFormat;
-use crate::disk::{BAMEntry, Location, BAM};
+use crate::disk::{Bam, BamEntry, Location};
 
 // The "next track" routines reflect the information in Peter Schepers'
 // DISK.TXT document found at:
@@ -57,7 +58,7 @@ pub struct DiskFormat {
     /// A description of the header format for this disk format.
     pub header: &'static HeaderFormat,
     /// A description of the BAM format for this disk format.
-    pub bam: &'static BAMFormat,
+    pub bam: &'static BamFormat,
 }
 
 impl DiskFormat {
@@ -84,10 +85,8 @@ impl DiskFormat {
     /// Return the list of locations which are reserved by CBM DOS and marked
     /// as allocated when a disk image is newly formatted.
     pub fn system_locations(&self) -> Vec<Location> {
-        let mut locations = vec![];
-
         // Header sector
-        locations.push(self.header.location);
+        let mut locations = vec![self.header.location];
 
         // BAM sectors
         for section in self.bam.sections {
@@ -122,7 +121,8 @@ impl DiskFormat {
             .system_locations()
             .iter()
             .filter(|Location(t, _)| *t == self.directory_track)
-            .count() - 1; // -1 because system_locations includes the first directory sector.
+            .count()
+            - 1; // -1 because system_locations includes the first directory sector.
 
         // Sectors available for directory entries
         let sectors = total_sectors - used_sectors;
@@ -147,7 +147,7 @@ impl DiskFormat {
             .sum()
     }
 
-    fn first_free_track<'a>(&self, bam: &'a BAM) -> io::Result<(u8, &'a BAMEntry)> {
+    fn first_free_track<'a>(&self, bam: &'a Bam) -> io::Result<(u8, &'a BamEntry)> {
         let max_distance = ::std::cmp::max(
             self.directory_track - self.first_track,
             self.last_track + 1 - self.directory_track,
@@ -175,7 +175,7 @@ impl DiskFormat {
         Err(DiskError::DiskFull.into())
     }
 
-    fn first_free_block(&self, bam: &BAM) -> io::Result<Location> {
+    fn first_free_block(&self, bam: &Bam) -> io::Result<Location> {
         if self.geos {
             return self.next_free_block_from_previous(bam, Location(self.first_track, 0));
         }
@@ -190,7 +190,7 @@ impl DiskFormat {
                 // Sector is available.
                 return Ok(Location(track, sector));
             }
-            map = map >> 1;
+            map >>= 1;
         }
 
         // Unless the BAM is corrupt (free_sectors is not consistent with the bitmap),
@@ -202,9 +202,9 @@ impl DiskFormat {
     // (track: u8, entry: &BAMEntry, reset_sector: bool)
     fn next_free_track_geos<'a>(
         &self,
-        bam: &'a BAM,
+        bam: &'a Bam,
         previous_track: u8,
-    ) -> io::Result<(u8, &'a BAMEntry, bool)> {
+    ) -> io::Result<(u8, &'a BamEntry, bool)> {
         let mut track = previous_track;
 
         // If we get to the end (and we didn't start with track 1), make another pass
@@ -264,9 +264,9 @@ impl DiskFormat {
     // (track: u8, entry: &BAMEntry, reset_sector: bool)
     fn next_free_track_cbm<'a>(
         &self,
-        bam: &'a BAM,
+        bam: &'a Bam,
         previous_track: u8,
-    ) -> io::Result<(u8, &'a BAMEntry, bool)> {
+    ) -> io::Result<(u8, &'a BamEntry, bool)> {
         // The CBM algorithm is to grow files away from the central directory track.
         // If the file's previous sector is on the bottom half, the next sector
         // will be on that track or below, if possible.  Likewise, if the
@@ -301,35 +301,39 @@ impl DiskFormat {
             // The next candidate track is determined differently depending on whether the
             // previous track was on the directory track, below the directory
             // track (bottom half), or above the directory track (top half).
-            if track == self.directory_track {
-                // We're writing directory sectors, but there are no more directory tracks.
-                // (The 1571 track 53 "second directory track" doesn't actually hold chained
-                // directory sectors, and is mostly wasted except for a second
-                // BAM sector.)
-                return Err(DiskError::DiskFull.into());
-            } else if track < self.directory_track {
-                // Bottom half: Scan downwards.
-                track -= 1;
-                while track > 0 && self.is_reserved_track(track) {
+            match track.cmp(&self.directory_track) {
+                Ordering::Less => {
+                    // Bottom half: Scan downwards.
                     track -= 1;
+                    while track > 0 && self.is_reserved_track(track) {
+                        track -= 1;
+                    }
+                    if track < self.first_track {
+                        // No more availability downwards.  Jump to the top half.
+                        track = self.directory_track + 1;
+                        passes -= 1;
+                        reset_sector = true;
+                    }
                 }
-                if track < self.first_track {
-                    // No more availability downwards.  Jump to the top half.
-                    track = self.directory_track + 1;
-                    passes -= 1;
-                    reset_sector = true;
+                Ordering::Equal => {
+                    // We're writing directory sectors, but there are no more directory tracks.
+                    // (The 1571 track 53 "second directory track" doesn't actually hold chained
+                    // directory sectors, and is mostly wasted except for a second
+                    // BAM sector.)
+                    return Err(DiskError::DiskFull.into());
                 }
-            } else {
-                // Top half: Scan upwards.
-                track += 1;
-                while self.is_reserved_track(track) {
+                Ordering::Greater => {
+                    // Top half: Scan upwards.
                     track += 1;
-                }
-                if track > self.last_track {
-                    // No more availability upwards.  Jump to the bottom half.
-                    track = self.directory_track - 1;
-                    passes -= 1;
-                    reset_sector = true;
+                    while self.is_reserved_track(track) {
+                        track += 1;
+                    }
+                    if track > self.last_track {
+                        // No more availability upwards.  Jump to the bottom half.
+                        track = self.directory_track - 1;
+                        passes -= 1;
+                        reset_sector = true;
+                    }
                 }
             }
         }
@@ -340,9 +344,9 @@ impl DiskFormat {
     // (track: u8, entry: &BAMEntry, reset_sector: bool)
     fn next_free_track<'a>(
         &self,
-        bam: &'a BAM,
+        bam: &'a Bam,
         previous_track: u8,
-    ) -> io::Result<(u8, &'a BAMEntry, bool)> {
+    ) -> io::Result<(u8, &'a BamEntry, bool)> {
         if self.geos {
             self.next_free_track_geos(bam, previous_track)
         } else {
@@ -350,7 +354,7 @@ impl DiskFormat {
         }
     }
 
-    fn next_free_block_from_previous(&self, bam: &BAM, previous: Location) -> io::Result<Location> {
+    fn next_free_block_from_previous(&self, bam: &Bam, previous: Location) -> io::Result<Location> {
         let mut sector = previous.1;
 
         // Find the next track (which will be the current track, if it has
@@ -422,7 +426,7 @@ impl DiskFormat {
         }
     }
 
-    pub fn next_free_block(&self, bam: &BAM, previous: Option<Location>) -> io::Result<Location> {
+    pub fn next_free_block(&self, bam: &Bam, previous: Option<Location>) -> io::Result<Location> {
         match previous {
             Some(previous) => self.next_free_block_from_previous(bam, previous),
             None => self.first_free_block(bam),
@@ -471,7 +475,7 @@ impl<'a> Iterator for LocationIterator<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::disk::{D64, D71, D81, Disk};
+    use crate::disk::{Disk, D64, D71, D81};
 
     const TOTAL_ALLOCABLE_BLOCKS: usize = 664;
     const REMAINING_DIRECTORY_BLOCKS: usize = 17;
@@ -506,7 +510,7 @@ mod tests {
         loop {
             let next = match format.next_free_block(&bam, location) {
                 Ok(l) => l,
-                Err(ref e) => match DiskError::from_io_error(&e) {
+                Err(ref e) => match DiskError::from_io_error(e) {
                     Some(ref e) if *e == DiskError::DiskFull => {
                         disk_full = true;
                         break;

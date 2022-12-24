@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 use std::io::{self, Write};
 
-use crate::disk::bam::BAMRef;
+use crate::disk::bam::BamRef;
 use crate::disk::block::{BlockDeviceRef, Location, BLOCK_SIZE};
 use crate::disk::directory::DirectoryEntry;
 use crate::disk::error::DiskError;
@@ -38,7 +38,7 @@ impl ChainLink {
     pub fn to_bytes(&self, bytes: &mut [u8]) {
         assert!(bytes.len() >= 2);
         match &self {
-            ChainLink::Next(location) => location.to_bytes(bytes),
+            ChainLink::Next(location) => location.write_bytes(bytes),
             ChainLink::Tail(size) => {
                 assert!(*size >= 2 && *size <= 256);
                 bytes[0] = 0x00;
@@ -68,7 +68,7 @@ impl ChainIterator {
     /// Create a new chain iterator starting at the specified location.
     pub fn new(blocks: BlockDeviceRef, starting_sector: Location) -> ChainIterator {
         ChainIterator {
-            blocks: blocks,
+            blocks,
             next_sector: Some(starting_sector),
             visited_sectors: HashSet::new(),
             block: [0u8; BLOCK_SIZE],
@@ -170,7 +170,7 @@ impl io::Read for ChainReader {
 
                     // Reduce the provided buffer slice to the unwritten portion.
                     let buf_ref = &mut buf;
-                    let value: &mut [u8] = ::std::mem::replace(buf_ref, &mut []);
+                    let value: &mut [u8] = std::mem::take(buf_ref);
                     *buf_ref = &mut value[nbytes..];
                 }
                 None => {
@@ -198,7 +198,7 @@ impl io::Read for ChainReader {
 /// allocation algorithm for the disk format.
 pub struct ChainWriter {
     blocks: BlockDeviceRef,
-    bam: BAMRef,
+    bam: BamRef,
     entry: DirectoryEntry,
     location: Location,
     block: Vec<u8>,
@@ -208,7 +208,7 @@ pub struct ChainWriter {
 impl ChainWriter {
     pub fn new(
         blocks: BlockDeviceRef,
-        bam: BAMRef,
+        bam: BamRef,
         entry: DirectoryEntry,
         start: Location,
     ) -> io::Result<ChainWriter> {
@@ -287,7 +287,7 @@ impl ChainWriter {
                 return Err(e);
             }
         };
-        next_location.to_bytes(block);
+        next_location.write_bytes(block);
 
         // Update state
         self.location = next_location;
@@ -363,7 +363,7 @@ impl io::Write for ChainWriter {
     }
 }
 
-pub fn remove_chain(blocks: BlockDeviceRef, bam: BAMRef, start: Location) -> io::Result<()> {
+pub fn remove_chain(blocks: BlockDeviceRef, bam: BamRef, start: Location) -> io::Result<()> {
     // Read the whole chain first to be sure we can visit every block with no
     // errors.
     let locations = ChainIterator::new(blocks, start).locations()?;

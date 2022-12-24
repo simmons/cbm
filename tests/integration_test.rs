@@ -45,7 +45,7 @@ fn random_available_name(rng: &mut impl Rng, disk: &Box<dyn Disk>) -> Petscii {
 
         match disk.check_filename_availability(&name) {
             Ok(_) => return name,
-            Err(ref e) => match DiskError::from_io_error(&e) {
+            Err(ref e) => match DiskError::from_io_error(e) {
                 Some(ref e) if *e == DiskError::FileExists => {}
                 Some(_) | None => panic!("cannot check filename availability: {}", e),
             },
@@ -96,7 +96,7 @@ struct RandomFile {
 
 impl RandomFile {
     fn new(mut rng: &mut XorShiftRng, disk: &Box<dyn Disk>) -> RandomFile {
-        let name = random_available_name(&mut rng, &disk);
+        let name = random_available_name(&mut rng, disk);
         let size: usize = rng.gen_range(MIN_FILE_SIZE, MAX_FILE_SIZE);
         let file_type = random_file_type(&mut rng);
         let mut contents = vec![0u8; size];

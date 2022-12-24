@@ -15,11 +15,11 @@ pub type BlockDeviceRef = Rc<RefCell<dyn BlockDevice>>;
 
 pub trait BlockDevice {
     fn check_writability(&self) -> io::Result<()>;
-    fn geometry<'a>(&'a self) -> &'a Geometry;
-    fn sector<'a>(&'a self, location: Location) -> io::Result<&'a [u8]>;
-    fn sector_mut<'a>(&'a mut self, location: Location) -> io::Result<&'a mut [u8]>;
-    fn error_table<'a>(&'a self) -> io::Result<Option<&'a [u8]>>;
-    fn error_table_mut<'a>(&'a mut self) -> io::Result<Option<&'a mut [u8]>>;
+    fn geometry(&self) -> &Geometry;
+    fn sector(&self, location: Location) -> io::Result<&[u8]>;
+    fn sector_mut(&mut self, location: Location) -> io::Result<&mut [u8]>;
+    fn error_table(&self) -> io::Result<Option<&[u8]>>;
+    fn error_table_mut(&mut self) -> io::Result<Option<&mut [u8]>>;
     fn flush(&mut self) -> io::Result<()>;
 
     fn sector_owned(&self, location: Location) -> io::Result<Vec<u8>> {
@@ -52,13 +52,13 @@ pub trait BlockDevice {
     fn dump(&self, writer: &mut dyn Write) -> io::Result<()> {
         let locations = LocationIterator::from_geometry(self.geometry());
         for location in locations {
-            writeln!(writer, "")?;
+            writeln!(writer)?;
             writeln!(writer, "track {:02} sector {:02}", location.0, location.1)?;
             let block = self.sector(location)?;
             writeln!(writer, "{}", util::hex(block))?;
         }
         if let Some(error_table) = self.error_table()? {
-            writeln!(writer, "")?;
+            writeln!(writer)?;
             writeln!(writer, "Error table:")?;
             let mut index = 0;
             for track in 1..=self.geometry().tracks {
@@ -106,29 +106,29 @@ impl BlockDevice for ImageBlockDevice {
     }
 
     #[inline]
-    fn geometry<'a>(&'a self) -> &'a Geometry {
+    fn geometry(&self) -> &Geometry {
         self.geometry
     }
 
-    fn sector<'a>(&'a self, location: Location) -> io::Result<&'a [u8]> {
+    fn sector(&self, location: Location) -> io::Result<&[u8]> {
         let offset = self.get_offset(location)?;
-        Ok(self.image.slice(offset, BLOCK_SIZE)?)
+        self.image.slice(offset, BLOCK_SIZE)
     }
 
-    fn sector_mut<'a>(&'a mut self, location: Location) -> io::Result<&'a mut [u8]> {
+    fn sector_mut(&mut self, location: Location) -> io::Result<&mut [u8]> {
         self.image.check_writability()?;
         let offset = self.get_offset(location)?;
-        Ok(self.image.slice_mut(offset, BLOCK_SIZE)?)
+        self.image.slice_mut(offset, BLOCK_SIZE)
     }
 
-    fn error_table<'a>(&'a self) -> io::Result<Option<&'a [u8]>> {
+    fn error_table(&self) -> io::Result<Option<&[u8]>> {
         match self.geometry.error_table_offset() {
             Some(offset) => Ok(Some(self.image.slice(offset, self.image.len() - offset)?)),
             None => Ok(None),
         }
     }
 
-    fn error_table_mut<'a>(&'a mut self) -> io::Result<Option<&'a mut [u8]>> {
+    fn error_table_mut(&mut self) -> io::Result<Option<&mut [u8]>> {
         self.image.check_writability()?;
         match self.geometry.error_table_offset() {
             Some(offset) => {
@@ -157,7 +157,7 @@ impl Location {
         assert!(bytes.len() >= 2);
         Location(bytes[0], bytes[1])
     }
-    pub fn to_bytes(&self, bytes: &mut [u8]) {
+    pub fn write_bytes(&self, bytes: &mut [u8]) {
         assert!(bytes.len() >= 2);
         bytes[0] = self.0;
         bytes[1] = self.1;

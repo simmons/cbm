@@ -52,12 +52,12 @@ impl FileType {
 impl fmt::Display for FileType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(match self {
-            &FileType::DEL => "del",
-            &FileType::SEQ => "seq",
-            &FileType::PRG => "prg",
-            &FileType::USR => "usr",
-            &FileType::REL => "rel",
-            &FileType::Unknown(_) => "unk",
+            FileType::DEL => "del",
+            FileType::SEQ => "seq",
+            FileType::PRG => "prg",
+            FileType::USR => "usr",
+            FileType::REL => "rel",
+            FileType::Unknown(_) => "unk",
         })
     }
 }
@@ -103,13 +103,13 @@ impl FileAttributes {
 
     /// Generate the byte which encodes this `FileAttributes` struct.
     pub fn to_byte(&self) -> u8 {
-        let mut byte = match &self.file_type {
-            &FileType::DEL => FILE_TYPE_DEL,
-            &FileType::SEQ => FILE_TYPE_SEQ,
-            &FileType::PRG => FILE_TYPE_PRG,
-            &FileType::USR => FILE_TYPE_USR,
-            &FileType::REL => FILE_TYPE_REL,
-            &FileType::Unknown(b) => b,
+        let mut byte = match self.file_type {
+            FileType::DEL => FILE_TYPE_DEL,
+            FileType::SEQ => FILE_TYPE_SEQ,
+            FileType::PRG => FILE_TYPE_PRG,
+            FileType::USR => FILE_TYPE_USR,
+            FileType::REL => FILE_TYPE_REL,
+            FileType::Unknown(b) => b,
         };
         if self.unused_bit {
             byte |= FILE_ATTRIB_UNUSED_MASK
@@ -338,7 +338,7 @@ impl GEOSExtra {
     pub fn to_bytes(&self, bytes: &mut [u8]) {
         assert_eq!(bytes.len(), EXTRA_SIZE);
         self.info_block
-            .to_bytes(&mut bytes[Self::INFO_BLOCK_OFFSET..]);
+            .write_bytes(&mut bytes[Self::INFO_BLOCK_OFFSET..]);
         bytes[Self::STRUCTURE_OFFSET] = self.structure.to_byte();
         bytes[Self::GEOS_FILE_TYPE_OFFSET] = self.geos_file_type.to_byte();
         bytes[Self::YEAR_OFFSET] = self.year;
@@ -418,8 +418,8 @@ impl DirectoryEntry {
         // Determine the file storage scheme
         let scheme = if file_attributes.file_type == FileType::REL {
             Scheme::Relative
-        } else if GEOSExtra::is_entry_geos(&bytes) {
-            if GEOSExtra::is_entry_vlir(&bytes) {
+        } else if GEOSExtra::is_entry_geos(bytes) {
+            if GEOSExtra::is_entry_vlir(bytes) {
                 Scheme::GEOSVLIR
             } else {
                 Scheme::GEOSSequential
@@ -523,12 +523,11 @@ impl PositionedData for DirectoryEntry {
 
 impl fmt::Display for DirectoryEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let quoted_filename = format!("\"{}\"", self.filename);
         write!(
             f,
             "{:<4} {:18}{}",
-            self.file_size,
-            format!("\"{}\"", self.filename),
-            self.file_attributes
+            self.file_size, quoted_filename, self.file_attributes
         )?;
         if f.alternate() {
             // verbose
@@ -543,13 +542,11 @@ impl fmt::Display for DirectoryEntry {
 
 impl fmt::Debug for DirectoryEntry {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let quoted_filename = format!("\"{}\"", self.filename);
         write!(
             f,
             "{},{},{:?} @ {:?}",
-            format!("\"{}\"", self.filename),
-            self.file_size,
-            self.file_attributes,
-            self.position
+            quoted_filename, self.file_size, self.file_attributes, self.position
         )
     }
 }
@@ -606,7 +603,7 @@ impl DirectoryIterator {
             block_iter,
             chunks: vec![].into_iter(), // Arrange to return None the first time.
             position: Position {
-                location: location,
+                location,
                 offset: 0,
                 size: ENTRY_SIZE as u8,
             },
@@ -757,8 +754,8 @@ where
         block[0] = 0x00;
         block[1] = 0xFF;
         // All other bytes should be zeroed.
-        for offset in 2..BLOCK_SIZE {
-            block[offset] = 0;
+        for block_byte in block.iter_mut().take(BLOCK_SIZE).skip(2) {
+            *block_byte = 0;
         }
         new_entry = DirectoryEntry::from_positioned_bytes(
             &block[0..ENTRY_SIZE],
@@ -820,7 +817,7 @@ mod tests {
         for _ in 0..MAX_NEW_ENTRIES {
             let mut entry = match next_free_directory_entry(&mut disk) {
                 Ok(entry) => entry,
-                Err(ref e) => match DiskError::from_io_error(&e) {
+                Err(ref e) => match DiskError::from_io_error(e) {
                     Some(ref e) if *e == DiskError::DiskFull => {
                         disk_full = true;
                         break;
@@ -931,7 +928,7 @@ mod tests {
         assert_eq!(entry.file_attributes.locked_flag, false);
         assert_eq!(entry.file_attributes.closed_flag, true);
         assert_eq!(entry.first_sector, Location(0x11, 0x05));
-        assert_eq!(entry.filename, Petscii::from_str("ascii codes"));
+        assert_eq!(entry.filename, Petscii::from_str_lossy("ascii codes"));
         assert_eq!(entry.extra, Extra::default());
         assert_eq!(entry.file_size, 0x0006);
     }

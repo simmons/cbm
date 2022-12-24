@@ -289,16 +289,16 @@ impl GEOSInfo {
             program_load_address: u16_from_le(&bytes[Self::PROGRAM_LOAD_ADDRESS_OFFSET..]),
             program_end_address: u16_from_le(&bytes[Self::PROGRAM_END_ADDRESS_OFFSET..]),
             program_start_address: u16_from_le(&bytes[Self::PROGRAM_START_ADDRESS_OFFSET..]),
-            class: GEOSString::from_bytes(&bytes.slice(Self::CLASS_OFFSET, Self::CLASS_SIZE)),
-            author: GEOSString::from_bytes(&bytes.slice(Self::AUTHOR_OFFSET, Self::AUTHOR_SIZE)),
+            class: GEOSString::from_bytes(bytes.slice(Self::CLASS_OFFSET, Self::CLASS_SIZE)),
+            author: GEOSString::from_bytes(bytes.slice(Self::AUTHOR_OFFSET, Self::AUTHOR_SIZE)),
             application: GEOSString::from_bytes(
-                &bytes.slice(Self::APPLICATION_OFFSET, Self::APPLICATION_SIZE),
+                bytes.slice(Self::APPLICATION_OFFSET, Self::APPLICATION_SIZE),
             ),
             reserved: bytes
                 .slice(Self::RESERVED_OFFSET, Self::RESERVED_SIZE)
                 .to_vec(),
             description: GEOSString::from_bytes(
-                &bytes.slice(Self::DESCRIPTION_OFFSET, Self::DESCRIPTION_SIZE),
+                bytes.slice(Self::DESCRIPTION_OFFSET, Self::DESCRIPTION_SIZE),
             ),
         }
     }

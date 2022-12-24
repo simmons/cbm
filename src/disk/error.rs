@@ -67,9 +67,7 @@ impl error::Error for DiskError {
     /// For errors which encapsulate another error, allow the caller to fetch
     /// the contained error.
     fn cause(&self) -> Option<&dyn error::Error> {
-        match *self {
-            _ => None,
-        }
+        None
     }
 }
 
@@ -80,36 +78,36 @@ impl fmt::Display for DiskError {
     }
 }
 
-impl Into<io::Error> for DiskError {
-    fn into(self) -> io::Error {
+impl From<DiskError> for io::Error {
+    fn from(disk_error: DiskError) -> Self {
         use self::DiskError::*;
         use std::io::ErrorKind::*;
-        match self {
-            Unknown => io::Error::new(Other, self),
-            ReadOnly => io::Error::new(Other, self),
-            InvalidLocation => io::Error::new(InvalidInput, self),
-            InvalidOffset => io::Error::new(InvalidInput, self),
-            InvalidHeader => io::Error::new(InvalidData, self),
-            InvalidBAM => io::Error::new(InvalidData, self),
-            InvalidLayout => io::Error::new(InvalidData, self),
-            InvalidRecord => io::Error::new(InvalidInput, self),
-            ReadOverflow => io::Error::new(InvalidInput, self),
-            ReadUnderrun => io::Error::new(InvalidInput, self),
-            WriteUnderrun => io::Error::new(InvalidInput, self),
-            Unformatted => io::Error::new(InvalidData, self),
-            self::DiskError::NotFound => io::Error::new(io::ErrorKind::NotFound, self),
-            ChainLoop => io::Error::new(InvalidData, self),
-            InvalidChainLink => io::Error::new(InvalidData, self),
-            InvalidRelativeFile => io::Error::new(InvalidData, self),
-            Unpositioned => io::Error::new(InvalidInput, self),
-            FilenameTooLong => io::Error::new(InvalidInput, self),
-            FileExists => io::Error::new(InvalidInput, self),
-            DiskFull => io::Error::new(Other, self),
-            InvalidRecordIndex => io::Error::new(InvalidInput, self),
-            UnknownFormat => io::Error::new(InvalidData, self),
-            GEOSInfoNotFound => io::Error::new(InvalidData, self),
-            RecordTooLarge => io::Error::new(InvalidData, self),
-            NonLinearFile => io::Error::new(InvalidInput, self),
+        match disk_error {
+            Unknown => io::Error::new(Other, disk_error),
+            ReadOnly => io::Error::new(Other, disk_error),
+            InvalidLocation => io::Error::new(InvalidInput, disk_error),
+            InvalidOffset => io::Error::new(InvalidInput, disk_error),
+            InvalidHeader => io::Error::new(InvalidData, disk_error),
+            InvalidBAM => io::Error::new(InvalidData, disk_error),
+            InvalidLayout => io::Error::new(InvalidData, disk_error),
+            InvalidRecord => io::Error::new(InvalidInput, disk_error),
+            ReadOverflow => io::Error::new(InvalidInput, disk_error),
+            ReadUnderrun => io::Error::new(InvalidInput, disk_error),
+            WriteUnderrun => io::Error::new(InvalidInput, disk_error),
+            Unformatted => io::Error::new(InvalidData, disk_error),
+            self::DiskError::NotFound => io::Error::new(io::ErrorKind::NotFound, disk_error),
+            ChainLoop => io::Error::new(InvalidData, disk_error),
+            InvalidChainLink => io::Error::new(InvalidData, disk_error),
+            InvalidRelativeFile => io::Error::new(InvalidData, disk_error),
+            Unpositioned => io::Error::new(InvalidInput, disk_error),
+            FilenameTooLong => io::Error::new(InvalidInput, disk_error),
+            FileExists => io::Error::new(InvalidInput, disk_error),
+            DiskFull => io::Error::new(Other, disk_error),
+            InvalidRecordIndex => io::Error::new(InvalidInput, disk_error),
+            UnknownFormat => io::Error::new(InvalidData, disk_error),
+            GEOSInfoNotFound => io::Error::new(InvalidData, disk_error),
+            RecordTooLarge => io::Error::new(InvalidData, disk_error),
+            NonLinearFile => io::Error::new(InvalidInput, disk_error),
         }
     }
 }
@@ -131,10 +129,7 @@ impl DiskError {
     /// underlying `DiskError`.  If not, return None.
     pub fn from_io_error(error: &io::Error) -> Option<DiskError> {
         match error.get_ref() {
-            Some(e) => match e.downcast_ref::<DiskError>() {
-                Some(disk_error) => Some(disk_error.clone()),
-                None => None,
-            },
+            Some(e) => e.downcast_ref::<DiskError>().cloned(),
             None => None,
         }
     }
@@ -182,18 +177,12 @@ impl DiskError {
 
 impl PartialEq<io::Error> for DiskError {
     fn eq(&self, other: &io::Error) -> bool {
-        match DiskError::from_io_error(&other) {
-            Some(ref e) if e == self => true,
-            _ => false,
-        }
+        matches!(DiskError::from_io_error(other), Some(ref e) if e == self)
     }
 }
 
 impl PartialEq<DiskError> for io::Error {
     fn eq(&self, other: &DiskError) -> bool {
-        match DiskError::from_io_error(self) {
-            Some(ref e) if e == other => true,
-            _ => false,
-        }
+        matches!(DiskError::from_io_error(self), Some(ref e) if e == other)
     }
 }

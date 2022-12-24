@@ -114,7 +114,7 @@ use std::ops::{Index, IndexMut};
 use std::path::Path;
 use std::rc::Rc;
 
-use crate::disk::bam::{BAMEntry, BAMRef, BAM};
+use crate::disk::bam::{Bam, BamEntry, BamRef};
 use crate::disk::block::{BlockDevice, BlockDeviceRef, Location, BLOCK_SIZE};
 use crate::disk::directory::{DirectoryEntry, DirectoryIterator, FileType};
 use crate::disk::file::{File, LinearFile, Scheme};
@@ -153,7 +153,7 @@ impl DiskType {
             .as_ref()
             .extension()
             .and_then(|s| s.to_str())
-            .and_then(|s| Some(s.to_lowercase()));
+            .map(|s| s.to_lowercase());
 
         if let Some(extension) = extension {
             match &extension.to_lowercase()[..] {
@@ -187,22 +187,20 @@ pub fn open<P: AsRef<Path>>(path: P, writable: bool) -> io::Result<Box<dyn Disk>
     }
     let path = path.as_ref();
     match d64::D64::open(path, writable) {
-        Ok(d64) => return Ok(Box::new(d64)),
+        Ok(d64) => Ok(Box::new(d64)),
         Err(ref e) if is_layout_error(e) => match d71::D71::open(path, writable) {
-            Ok(d71) => return Ok(Box::new(d71)),
-            Err(ref e) if is_layout_error(e) => {
-                return Ok(Box::new(d81::D81::open(path, writable)?));
-            }
-            Err(e) => return Err(e),
+            Ok(d71) => Ok(Box::new(d71)),
+            Err(ref e) if is_layout_error(e) => Ok(Box::new(d81::D81::open(path, writable)?)),
+            Err(e) => Err(e),
         },
-        Err(e) => return Err(e),
+        Err(e) => Err(e),
     }
 }
 
 /// This is a helper method that Disk implementations can use to set BAM.
-fn set_bam(bam_ref: &mut Option<BAMRef>, new_bam: Option<BAM>) {
+fn set_bam(bam_ref: &mut Option<BamRef>, new_bam: Option<Bam>) {
     // We must be careful to replace the contents of the existing RefCell
-    // (if any) so that any holders of the Rc<RefCell<BAM>> will use the
+    // (if any) so that any holders of the Rc<RefCell<Bam>> will use the
     // new BAM and not try to use the old BAM, which could cause
     // corruption.
     match new_bam {
@@ -236,8 +234,8 @@ pub trait Disk {
     fn header_mut(&mut self) -> io::Result<&mut Header>;
     fn set_header(&mut self, header: Option<Header>);
     fn flush_header(&mut self) -> io::Result<()>;
-    fn bam(&self) -> io::Result<BAMRef>;
-    fn set_bam(&mut self, bam: Option<BAM>);
+    fn bam(&self) -> io::Result<BamRef>;
+    fn set_bam(&mut self, bam: Option<Bam>);
 
     /// Initialize the disk by reading the format metadata, if any.  This may
     /// be called again, for example, when the BAM or header have been
@@ -246,7 +244,7 @@ pub trait Disk {
         let disk_format = self.native_disk_format();
         let mut header = Header::read(self.blocks().clone(), disk_format.header).ok();
         let mut bam = match header {
-            Some(_) => BAM::read(self.blocks(), disk_format).ok(),
+            Some(_) => Bam::read(self.blocks(), disk_format).ok(),
             None => {
                 // It doesn't make sense to have an unreadable BAM with a valid header --
                 // consider the disk image to be unformatted.
@@ -295,8 +293,8 @@ pub trait Disk {
                 let location = Location(track, sector);
                 let mut blocks = self.blocks_ref_mut();
                 let block = blocks.sector_mut(location)?;
-                for offset in 0..BLOCK_SIZE {
-                    block[offset] = 0;
+                for block_byte in block.iter_mut().take(BLOCK_SIZE) {
+                    *block_byte = 0;
                 }
             }
         }
@@ -320,7 +318,7 @@ pub trait Disk {
 
         // Write a fresh BAM
         {
-            let mut bam = BAM::new(self.blocks(), disk_format);
+            let mut bam = Bam::new(self.blocks(), disk_format);
 
             // Perform the initial allocations for this format.
             for location in disk_format.system_locations() {
@@ -351,10 +349,10 @@ pub trait Disk {
     fn find_directory_entry(&self, filename: &Petscii) -> io::Result<DirectoryEntry> {
         self.iter()
             .find(|x| match x {
-                &Err(_) => true,
-                &Ok(ref entry) => entry.filename == *filename,
+                Err(_) => true,
+                Ok(ref entry) => entry.filename == *filename,
             })
-            .unwrap_or(Err(DiskError::NotFound.into()))
+            .unwrap_or_else(|| Err(DiskError::NotFound.into()))
     }
 
     /// Return a `DirectoryEntry` representing the next free slot on the
@@ -377,12 +375,12 @@ pub trait Disk {
     /// filename.
     fn check_filename_availability(&self, filename: &Petscii) -> io::Result<()> {
         // Check that the new filename doesn't already exist.
-        match self.find_directory_entry(&filename) {
+        match self.find_directory_entry(filename) {
             Ok(_) => Err(DiskError::FileExists.into()),
             Err(e) => match DiskError::from_io_error(&e) {
                 Some(DiskError::NotFound) => Ok(()),
                 Some(disk_error) => Err(disk_error.into()),
-                _ => Err(e.into()),
+                _ => Err(e),
             },
         }
     }
@@ -443,8 +441,8 @@ pub trait Disk {
         // is a tail block of zero length.
         let mut blocks = self.blocks_ref_mut();
         {
-            let mut block = blocks.sector_mut(first_sector)?;
-            chain::CHAIN_LINK_ZERO.to_bytes(&mut block);
+            let block = blocks.sector_mut(first_sector)?;
+            chain::CHAIN_LINK_ZERO.to_bytes(block);
         }
 
         // Populate and write the directory entry for this file.
@@ -479,8 +477,8 @@ pub trait Disk {
 
     /// Read a specific block from the disk, given its track and sector
     /// location.
-    fn read_sector<'a>(&self, location: Location) -> io::Result<Vec<u8>> {
-        Ok(self.blocks_ref().sector_owned(location)?)
+    fn read_sector(&self, location: Location) -> io::Result<Vec<u8>> {
+        self.blocks_ref().sector_owned(location)
     }
 
     /// Write a block of data to a specific location on the disk.
@@ -500,10 +498,10 @@ pub trait Disk {
     }
 
     /// Return the name of this disk as found in the disk header.
-    fn name<'a>(&'a self) -> Option<&'a Petscii> {
-        match &self.header() {
-            &Ok(ref header) => Some(&header.disk_name),
-            &Err(_) => None,
+    fn name(&self) -> Option<&Petscii> {
+        match self.header() {
+            Ok(header) => Some(&header.disk_name),
+            Err(_) => None,
         }
     }
 
@@ -527,8 +525,8 @@ pub trait Disk {
 
 impl fmt::Display for dyn Disk {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &self.header() {
-            &Ok(header) => {
+        match self.header() {
+            Ok(header) => {
                 write!(
                     f,
                     "{} \"{:16}\" {} {}",
@@ -545,7 +543,7 @@ impl fmt::Display for dyn Disk {
                 }
                 Ok(())
             }
-            &Err(ref e) => write!(f, "Cannot read header: {}", e),
+            Err(ref e) => write!(f, "Cannot read header: {}", e),
         }
     }
 }
@@ -646,15 +644,15 @@ impl Id {
     }
 }
 
-impl Into<Petscii> for Id {
-    fn into(self) -> Petscii {
-        Petscii::from_bytes(&self.0)
+impl From<Id> for Petscii {
+    fn from(id: Id) -> Self {
+        Petscii::from_bytes(&id.0)
     }
 }
 
-impl Into<String> for Id {
-    fn into(self) -> String {
-        let p: Petscii = self.into();
+impl From<Id> for String {
+    fn from(id: Id) -> Self {
+        let p: Petscii = id.into();
         p.into()
     }
 }
@@ -667,7 +665,7 @@ impl AsRef<[u8]> for Id {
 
 impl AsRef<Id> for Id {
     fn as_ref(&self) -> &Id {
-        &self
+        self
     }
 }
 
@@ -676,7 +674,7 @@ impl<'a> From<&'a [u8]> for Id {
         // Best-effort only.  Use the first two bytes for the Id, using zeros
         // for any byte not present.
         Id([
-            if bytes.len() > 0 { bytes[0] } else { 0 },
+            if !bytes.is_empty() { bytes[0] } else { 0 },
             if bytes.len() > 1 { bytes[1] } else { 0 },
         ])
     }

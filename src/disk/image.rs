@@ -65,7 +65,7 @@ impl Image {
         }
     }
 
-    pub fn slice<'a>(&'a self, offset: usize, length: usize) -> io::Result<&'a [u8]> {
+    pub fn slice(&self, offset: usize, length: usize) -> io::Result<&[u8]> {
         self.check_bounds(offset + length)?;
         Ok(match self {
             Image::ReadOnlyMap(mmap) => &mmap[offset..offset + length],
@@ -74,7 +74,7 @@ impl Image {
         })
     }
 
-    pub fn slice_mut<'a>(&'a mut self, offset: usize, length: usize) -> io::Result<&'a mut [u8]> {
+    pub fn slice_mut(&mut self, offset: usize, length: usize) -> io::Result<&mut [u8]> {
         self.check_bounds(offset + length)?;
         match self {
             Image::ReadOnlyMap(_) => Err(DiskError::ReadOnly.into()),

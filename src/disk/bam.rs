@@ -8,14 +8,14 @@ use crate::disk::block::{BlockDeviceRef, Location};
 use crate::disk::error::DiskError;
 use crate::disk::DiskFormat;
 
-/// A BAMFormat describes how BAM information is stored for a particular disk
+/// A BamFormat describes how BAM information is stored for a particular disk
 /// image format.
-pub struct BAMFormat {
+pub struct BamFormat {
     /// The list of sections where BAM entries are stored.
-    pub sections: &'static [BAMSection],
+    pub sections: &'static [BamSection],
 }
 
-impl BAMFormat {
+impl BamFormat {
     fn tracks(&self) -> usize {
         self.sections.iter().map(|s| s.tracks).sum()
     }
@@ -23,7 +23,7 @@ impl BAMFormat {
 
 /// BAM can be stored in one or more sections, depending on the disk image
 /// format.  Each sections stores BAM entries for a particular range of tracks.
-pub struct BAMSection {
+pub struct BamSection {
     /// The track and sector where this section's bitmaps are stored.
     pub bitmap_location: Location,
     /// The offset within the block where entries start.
@@ -45,18 +45,18 @@ pub struct BAMSection {
 }
 
 /// A BamWriter writes BAM entries onto the disk image according to the
-/// provided BAMFormat.
-pub struct BAMWriter {
+/// provided BamFormat.
+pub struct BamWriter {
     blocks: BlockDeviceRef,
-    format: &'static BAMFormat,
+    format: &'static BamFormat,
 }
 
-impl BAMWriter {
-    pub fn new(blocks: BlockDeviceRef, format: &'static BAMFormat) -> BAMWriter {
-        BAMWriter { blocks, format }
+impl BamWriter {
+    pub fn new(blocks: BlockDeviceRef, format: &'static BamFormat) -> BamWriter {
+        BamWriter { blocks, format }
     }
 
-    fn write(&mut self, entries: &[BAMEntry]) -> io::Result<()> {
+    fn write(&mut self, entries: &[BamEntry]) -> io::Result<()> {
         let mut previous_tracks = 0; // tracks handled in previous sections.
         for section in self.format.sections {
             // Read the block containing BAM bitmaps for this section.
@@ -102,25 +102,25 @@ impl BAMWriter {
     }
 }
 
-#[derive(Clone, Copy)]
-pub struct BAMEntry {
+#[derive(Clone, Copy, Default)]
+pub struct BamEntry {
     pub free_sectors: u8,
     pub sector_map: u64,
 }
 
-impl BAMEntry {
-    pub fn new(sectors: u8) -> BAMEntry {
+impl BamEntry {
+    pub fn new(sectors: u8) -> BamEntry {
         let mut map = 0;
         for _ in 0..sectors {
             map = (map << 1) | 1;
         }
-        BAMEntry {
+        BamEntry {
             free_sectors: sectors,
             sector_map: map,
         }
     }
 
-    pub fn from_bytes(free_sectors: u8, bitmap: &[u8]) -> BAMEntry {
+    pub fn from_bytes(free_sectors: u8, bitmap: &[u8]) -> BamEntry {
         // Read as many sector bitmap bytes as are present.
         // (1541/1571 has 3 bytes, 1581 has 5 bytes.)
         let mut sector_map: u64 = 0;
@@ -129,9 +129,9 @@ impl BAMEntry {
             sector_map = (sector_map << 8) | bitmap[byte] as u64;
         }
 
-        BAMEntry {
-            free_sectors: free_sectors,
-            sector_map: sector_map,
+        BamEntry {
+            free_sectors,
+            sector_map,
         }
     }
 
@@ -139,9 +139,9 @@ impl BAMEntry {
         // Write as many sector bitmap bytes as are present in the output buffer.
         // (1541/1571 has 3 bytes, 1581 has 5 bytes.)
         let mut sector_map = self.sector_map;
-        for i in 0..bitmap.len() {
-            bitmap[i] = (sector_map & 0xFF) as u8;
-            sector_map = sector_map >> 8;
+        for output_byte_ref in bitmap.iter_mut() {
+            *output_byte_ref = (sector_map & 0xFF) as u8;
+            sector_map >>= 8;
         }
     }
 
@@ -157,13 +157,13 @@ impl BAMEntry {
 
     #[inline]
     pub fn allocate(&mut self, sector: u8) {
-        self.sector_map = self.sector_map & !(1u64 << sector);
+        self.sector_map &= !(1u64 << sector);
         self.update_free_sectors();
     }
 
     #[inline]
     pub fn free(&mut self, sector: u8) {
-        self.sector_map = self.sector_map | (1u64 << sector);
+        self.sector_map |= 1u64 << sector;
         self.update_free_sectors();
     }
 
@@ -174,83 +174,76 @@ impl BAMEntry {
             if map & 1 == 1 {
                 count += 1;
             }
-            map = map >> 1;
+            map >>= 1;
         }
         self.free_sectors = count;
     }
 }
 
-impl Default for BAMEntry {
-    fn default() -> Self {
-        BAMEntry {
-            free_sectors: 0,
-            sector_map: 0,
-        }
-    }
-}
+pub type BamRef = Rc<RefCell<Bam>>;
 
-pub type BAMRef = Rc<RefCell<BAM>>;
-
-pub struct BAM {
-    bam_rw: Box<BAMWriter>,
+pub struct Bam {
+    bam_rw: Box<BamWriter>,
     format: DiskFormat,
-    entries: Vec<BAMEntry>,
+    entries: Vec<BamEntry>,
     invalidated: bool,
 }
 
-impl BAM {
-    pub fn new(blocks_ref: BlockDeviceRef, disk_format: &DiskFormat) -> BAM {
+impl Bam {
+    pub fn new(blocks_ref: BlockDeviceRef, disk_format: &DiskFormat) -> Bam {
         let mut bam_entries = vec![];
         for track in 1..=disk_format.bam.tracks() {
-            bam_entries.push(BAMEntry::new(disk_format.tracks[track as usize].sectors));
+            bam_entries.push(BamEntry::new(disk_format.tracks[track as usize].sectors));
         }
-        BAM::from_entries(
+        Bam::from_entries(
             disk_format,
             bam_entries,
-            Box::new(BAMWriter::new(blocks_ref, disk_format.bam)),
+            Box::new(BamWriter::new(blocks_ref, disk_format.bam)),
         )
     }
 
-    pub fn read(blocks_ref: BlockDeviceRef, disk_format: &DiskFormat) -> io::Result<BAM> {
+    pub fn read(blocks_ref: BlockDeviceRef, disk_format: &DiskFormat) -> io::Result<Bam> {
         let mut entries = Vec::with_capacity(disk_format.bam.tracks());
         let blocks = blocks_ref.borrow();
 
         for section in disk_format.bam.sections {
             // Read the block containing BAM free sector counts for this section.
-            let mut block = blocks.sector(section.free_location)?;
+            let free_counts_block = blocks.sector(section.free_location)?;
 
-            // Read BAM free sector counts from the block
-            let mut free_sector_counts: Vec<u8> = Vec::with_capacity(section.tracks);
-            for i in 0..section.tracks {
-                let offset = section.free_offset + i * section.free_stride;
-                free_sector_counts.push(block[offset]);
-            }
-
-            // Do we need to load a different block for reading the bitmaps?
-            if section.bitmap_location != section.free_location {
+            // Do we need to load a different block for reading the allocation bitmaps?
+            let bitmaps_block = if section.bitmap_location != section.free_location {
                 // Read the block containing BAM bitmaps for this section.
-                block = blocks.sector(section.bitmap_location)?;
-            }
+                blocks.sector(section.bitmap_location)?
+            } else {
+                // Reuse the same block loaded for the free counts.
+                free_counts_block
+            };
 
-            // Read BAM bitmaps from the block
+            // Process each track in this section
             for i in 0..section.tracks {
+                // Read the BAM free sector count for this track
+                let free_sector_count =
+                    free_counts_block[section.free_offset + i * section.free_stride];
+
+                // Read the BAM bitmaps
                 let offset = section.bitmap_offset + i * section.bitmap_stride;
-                entries.push(BAMEntry::from_bytes(
-                    free_sector_counts[i],
-                    &block[offset..offset + section.bitmap_size],
+                entries.push(BamEntry::from_bytes(
+                    //free_sector_counts[i],
+                    free_sector_count,
+                    &bitmaps_block[offset..offset + section.bitmap_size],
                 ));
             }
         }
 
-        Ok(BAM::from_entries(
+        Ok(Bam::from_entries(
             disk_format,
             entries,
-            Box::new(BAMWriter::new(blocks_ref.clone(), disk_format.bam)),
+            Box::new(BamWriter::new(blocks_ref.clone(), disk_format.bam)),
         ))
     }
 
-    fn from_entries(format: &DiskFormat, entries: Vec<BAMEntry>, bam_rw: Box<BAMWriter>) -> BAM {
-        BAM {
+    fn from_entries(format: &DiskFormat, entries: Vec<BamEntry>, bam_rw: Box<BamWriter>) -> Bam {
+        Bam {
             bam_rw,
             format: format.clone(),
             entries,
@@ -280,12 +273,12 @@ impl BAM {
         blocks_free
     }
 
-    pub fn entry<'a>(&'a self, track: u8) -> io::Result<&'a BAMEntry> {
+    pub fn entry(&self, track: u8) -> io::Result<&BamEntry> {
         self.check_validity()?;
         Ok(&self.entries[(track - 1) as usize])
     }
 
-    pub fn entry_mut<'a>(&'a mut self, track: u8) -> io::Result<&'a mut BAMEntry> {
+    pub fn entry_mut(&mut self, track: u8) -> io::Result<&mut BamEntry> {
         self.check_validity()?;
         Ok(&mut self.entries[(track - 1) as usize])
     }
@@ -332,7 +325,7 @@ impl BAM {
                 if map & 1 == 0 {
                     locations.push(Location::new(track as u8 + 1, sector));
                 }
-                map = map >> 1;
+                map >>= 1;
             }
         }
         Ok(locations)
@@ -346,14 +339,14 @@ impl BAM {
                 if map & 1 == 1 {
                     locations.push(Location::new(track as u8 + 1, sector));
                 }
-                map = map >> 1;
+                map >>= 1;
             }
         }
         Ok(locations)
     }
 }
 
-impl fmt::Debug for BAM {
+impl fmt::Debug for Bam {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for track in 0..(self.format.last_track as usize) {
             write!(
@@ -367,7 +360,7 @@ impl fmt::Debug for BAM {
             for _ in 0..self.format.tracks[track + 1].sectors {
                 let c: char = if map & 1 == 1 { '.' } else { 'x' };
                 f.write_char(c)?;
-                map = map >> 1;
+                map >>= 1;
             }
             f.write_char('\n')?;
         }
@@ -384,7 +377,7 @@ mod tests {
     #[test]
     fn test_bam_entry() {
         let bytes: [u8; 4] = [0x12, 0xFF, 0xF9, 0x17];
-        let bam_entry = super::BAMEntry::from_bytes(bytes[0], &bytes[1..4]);
+        let bam_entry = super::BamEntry::from_bytes(bytes[0], &bytes[1..4]);
         assert_eq!(bam_entry.free_sectors, 0x12);
         assert_eq!(bam_entry.sector_map, 0x17F9FF);
     }

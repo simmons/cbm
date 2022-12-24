@@ -3,11 +3,11 @@ use std::io;
 use std::path::Path;
 use std::rc::Rc;
 
-use crate::disk::bam::{BAMFormat, BAMSection};
+use crate::disk::bam::{BamFormat, BamSection};
 use crate::disk::block::{BlockDevice, BlockDeviceRef, ImageBlockDevice};
 use crate::disk::error::DiskError;
 use crate::disk::header::{Header, HeaderFormat};
-use crate::disk::{self, BAMRef, Disk, DiskFormat, Geometry, Image, Location, Track, BAM};
+use crate::disk::{self, Bam, BamRef, Disk, DiskFormat, Geometry, Image, Location, Track};
 
 /// A description of the header format for this disk image type.
 static HEADER_FORMAT: HeaderFormat = HeaderFormat {
@@ -26,8 +26,8 @@ static HEADER_FORMAT: HeaderFormat = HeaderFormat {
 };
 
 /// A description of the BAM format for this disk image type.
-static BAM_FORMAT: BAMFormat = BAMFormat {
-    sections: &[BAMSection {
+static BAM_FORMAT: BamFormat = BamFormat {
+    sections: &[BamSection {
         bitmap_location: Location(18, 0),
         bitmap_offset: 0x05,
         bitmap_size: 3,
@@ -86,7 +86,7 @@ static ALLOWED_GEOMETRIES: [&Geometry; 4] = [
     &GEOMETRY_40_ERRORS,
 ];
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 static TRACKS: [Track; 41] = [
     Track { sectors: 0,  sector_offset: 0,   byte_offset: 0, }, // There is no track 0.
     Track { sectors: 21, sector_offset: 0,   byte_offset: 0x00000, }, // 1
@@ -137,7 +137,7 @@ static TRACKS: [Track; 41] = [
 pub struct D64 {
     blocks: Rc<RefCell<ImageBlockDevice>>,
     header: Option<Header>,
-    bam: Option<BAMRef>,
+    bam: Option<BamRef>,
     format: Option<DiskFormat>,
 }
 
@@ -245,18 +245,18 @@ impl Disk for D64 {
         self.blocks.borrow_mut()
     }
 
-    fn header<'a>(&'a self) -> io::Result<&'a Header> {
-        match &self.header {
-            &Some(ref header) => Ok(&header),
-            &None => Err(DiskError::Unformatted.into()),
+    fn header(&self) -> io::Result<&Header> {
+        match self.header {
+            Some(ref header) => Ok(header),
+            None => Err(DiskError::Unformatted.into()),
         }
     }
 
-    fn header_mut<'a>(&'a mut self) -> io::Result<&'a mut Header> {
+    fn header_mut(&mut self) -> io::Result<&mut Header> {
         self.blocks.borrow().check_writability()?;
-        match &mut self.header {
-            &mut Some(ref mut header) => Ok(header),
-            &mut None => Err(DiskError::Unformatted.into()),
+        match self.header {
+            Some(ref mut header) => Ok(header),
+            None => Err(DiskError::Unformatted.into()),
         }
     }
 
@@ -272,14 +272,14 @@ impl Disk for D64 {
         header.write(self.blocks.clone(), &HEADER_FORMAT)
     }
 
-    fn bam(&self) -> io::Result<BAMRef> {
-        match &self.bam {
-            &Some(ref bam) => Ok(bam.clone()),
-            &None => Err(DiskError::Unformatted.into()),
+    fn bam(&self) -> io::Result<BamRef> {
+        match self.bam {
+            Some(ref bam) => Ok(bam.clone()),
+            None => Err(DiskError::Unformatted.into()),
         }
     }
 
-    fn set_bam(&mut self, bam: Option<BAM>) {
+    fn set_bam(&mut self, bam: Option<Bam>) {
         disk::set_bam(&mut self.bam, bam);
     }
 }
