@@ -22,7 +22,7 @@ impl BamFormat {
 }
 
 /// BAM can be stored in one or more sections, depending on the disk image
-/// format.  Each sections stores BAM entries for a particular range of tracks.
+/// format. Each section stores BAM entries for a particular range of tracks.
 pub struct BamSection {
     /// The track and sector where this section's bitmaps are stored.
     pub bitmap_location: Location,

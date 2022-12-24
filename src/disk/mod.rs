@@ -47,7 +47,6 @@
 //!    same value used in the diskette format type: The 1541/1571 ROMs will
 //!    write `0x41` ("A"), and the 1581/C65 ROMs will write `0x44` ("D").
 //!
-//!
 //! Note that the names for these fields can vary. I'm choosing to use the
 //! terminology found in the 1540 ROM source, since it makes a clear distinction
 //! between the format type as written to offset `0x02` ("diskette format type")
@@ -363,8 +362,8 @@ pub trait Disk {
         directory::next_free_directory_entry(self)
     }
 
-    /// Write the the provide directory entry to disk, using the same slot as
-    /// it was originally read from.
+    /// Write the provided directory entry to disk, using the same slot as it was
+    /// originally read from.
     fn write_directory_entry(&mut self, entry: &DirectoryEntry) -> io::Result<()> {
         let mut blocks = self.blocks_ref_mut();
         blocks.positioned_write(entry)?;
