@@ -193,10 +193,6 @@ pub enum Extra {
 }
 
 impl Extra {
-    pub fn default() -> Extra {
-        Extra::Linear(LinearExtra::from_bytes(&[0u8; EXTRA_SIZE]))
-    }
-
     pub fn from_bytes(scheme: Scheme, bytes: &[u8]) -> Extra {
         assert_eq!(bytes.len(), EXTRA_SIZE);
         match scheme {
@@ -213,6 +209,12 @@ impl Extra {
             Extra::Relative(e) => e.to_bytes(bytes),
             Extra::GEOS(e) => e.to_bytes(bytes),
         }
+    }
+}
+
+impl Default for Extra {
+    fn default() -> Self {
+        Extra::Linear(LinearExtra::from_bytes(&[0u8; EXTRA_SIZE]))
     }
 }
 
@@ -243,7 +245,7 @@ impl LinearExtra {
 
     pub fn to_bytes(&self, bytes: &mut [u8]) {
         assert_eq!(bytes.len(), EXTRA_SIZE);
-        (&mut bytes[..]).copy_from_slice(&self.unused);
+        bytes[..].copy_from_slice(&self.unused);
     }
 }
 
@@ -282,7 +284,7 @@ impl RelativeExtra {
         assert_eq!(bytes.len(), EXTRA_SIZE);
         bytes[Self::FIRST_SIDE_SECTOR_OFFSET] = self.first_side_sector.0;
         bytes[Self::FIRST_SIDE_SECTOR_OFFSET + 1] = self.first_side_sector.1;
-        (&mut bytes[Self::UNUSED_OFFSET..EXTRA_SIZE]).copy_from_slice(&self.unused);
+        bytes[Self::UNUSED_OFFSET..EXTRA_SIZE].copy_from_slice(&self.unused);
     }
 }
 
