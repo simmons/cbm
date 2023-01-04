@@ -1,12 +1,12 @@
 
-use std::fmt;
+use core::fmt;
 
 /// Write a hexdump of the provided byte slice.
 pub fn hexdump(
     f: &mut fmt::Formatter,
     prefix: &str,
     buffer: &[u8],
-) -> std::result::Result<(), std::fmt::Error> {
+) -> core::result::Result<(), core::fmt::Error> {
     const COLUMNS: usize = 16;
     let mut offset: usize = 0;
     if buffer.is_empty() {
