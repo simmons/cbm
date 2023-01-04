@@ -1,9 +1,11 @@
-use std::char;
-use std::fmt;
-use std::fmt::Display;
-use std::fmt::Write;
-use std::iter::IntoIterator;
-use std::ops::Index;
+extern crate alloc;
+
+use core::char;
+use core::fmt;
+use core::fmt::Display;
+use core::fmt::Write;
+use core::iter::IntoIterator;
+use core::ops::Index;
 
 // The Unicode code point we use for untranslatable PETSCII characters.
 const NONE: char = char::REPLACEMENT_CHARACTER;
@@ -238,7 +240,7 @@ impl Index<usize> for Petscii {
 
 impl IntoIterator for Petscii {
     type Item = u8;
-    type IntoIter = ::std::vec::IntoIter<u8>;
+    type IntoIter = alloc::vec::IntoIter<u8>;
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
     }
@@ -246,7 +248,7 @@ impl IntoIterator for Petscii {
 
 impl<'a> IntoIterator for &'a Petscii {
     type Item = &'a u8;
-    type IntoIter = ::std::slice::Iter<'a, u8>;
+    type IntoIter = alloc::slice::Iter<'a, u8>;
     fn into_iter(self) -> Self::IntoIter {
         (self.0).iter()
     }
